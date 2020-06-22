@@ -1,7 +1,7 @@
 
 KERNEL: booting...
 ===========================================================
-HellfireOS v2.19.03 (4.9.3) [Jun 22 2020, 16:28:26]
+HellfireOS v2.19.03 (4.9.3) [Jun 22 2020, 16:58:06]
 Embedded Systems Group - GSE, PUCRS - [2007 - 2019]
 ===========================================================
 
@@ -20,8 +20,8 @@ KERNEL: this is core #4
 KERNEL: NoC queue init, 64 packets
 KERNEL: NoC driver registered
 HAL: _task_init()
-KERNEL: [idle task], id: 0, p:0, c:0, d:0, addr: 10000dc8, sp: 100083f0, ss: 1024 bytes
-KERNEL: [master], id: 1, p:0, c:0, d:0, addr: 10000564, sp: 100093f8, ss: 4096 bytes
+KERNEL: [idle task], id: 0, p:0, c:0, d:0, addr: 10000dec, sp: 10008420, ss: 1024 bytes
+KERNEL: [master], id: 1, p:0, c:0, d:0, addr: 10000564, sp: 10009428, ss: 4096 bytes
 KERNEL: free heap: 485368 bytes
 KERNEL: HellfireOS is up
 Gaussian step...
@@ -29,6 +29,7 @@ Waiting for a buffer...
 
 TX MODE
 
+Debug i: 3
 Received from core3
 Received ready buffer...
 Preparing a gaussian buffer...
@@ -36,17 +37,17 @@ Sending buffer...
 Sending a packet to: Core 3 Port 1000 Channel 4
 Waiting for ack...
 
-Received from core3 -- Packet Type: 1
+Received from core2 -- Packet Type: 1
 
-Received from core3 -- Packet Type: 1
+Received from core1 -- Packet Type: 1
 
-Received from core3 -- Packet Type: 1
+Received from core0 -- Packet Type: 1
 
-Received from core3 -- Packet Type: 1
+Received from core1 -- Packet Type: 1
 
-Received from core3 -- Packet Type: 1
+Received from core2 -- Packet Type: 1
 
-Received from core3 -- Packet Type: 1
+Received from core0 -- Packet Type: 1
 
 Received from core3 -- Packet Type: 0
 Ack detected!!
@@ -55,6 +56,55 @@ Waiting for a buffer...
 
 TX MODE
 
+Debug i: 3
+Received from core3
+Received ERROR...
+
+TX MODE
+
+Debug i: 1
+Received from core1
+Received ready buffer...
+Preparing a gaussian buffer...
+Sending buffer...
+Sending a packet to: Core 1 Port 1000 Channel 4
+Waiting for ack...
+
+Received from core2 -- Packet Type: 1
+
+Received from core0 -- Packet Type: 1
+
+Received from core3 -- Packet Type: 0
+
+Received from core1 -- Packet Type: 0
+Ack detected!!
+Gaussian step...
+Waiting for a buffer...
+
+TX MODE
+
+Debug i: 0
+Received from core0
+Received ready buffer...
+Preparing a gaussian buffer...
+Sending buffer...
+Sending a packet to: Core 0 Port 1000 Channel 4
+Waiting for ack...
+
+Received from core2 -- Packet Type: 1
+
+Received from core1 -- Packet Type: 0
+
+Received from core2 -- Packet Type: 1
+
+Received from core0 -- Packet Type: 0
+Ack detected!!
+Gaussian step...
+Waiting for a buffer...
+
+TX MODE
+
+Debug i: 3
 Received from core3
 Received image block buffer...
 Sending ack...
@@ -62,274 +112,106 @@ Sending a packet to: Core 3 Port 1000 Channel 4
 Preparing a gaussian buffer...
 Sending buffer...
 Sending a packet to: Core 3 Port 1000 Channel 4
+Waiting for ack...
 
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...W
-KERNEL: NoC queue full! dropping packet...aiting for 
-KERNEL: NoC queue full! dropping packet...ack...
-
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-KERNEL: NoC queue full! dropping packet...
-Received from core3 -- Packet Type: 1
-
-Received from core3 -- Packet Type: 1
-
-Received from core3 -- Packet Type: 1
-
-KERNEL: NoC queue full! dropping packet...hf_recv(): error -204
-
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
-
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
-
-Received from core3 -- Packet Type: 2
-hf_recv(): error -204
-
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
-
-Received from core3 -- Packet Type: 1
-
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
-
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
-
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
-
-Received from core3 -- Packet Type: 1
-
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
-
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
-
-Received from core3 -- Packet Type: 1
-
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
-
-Received from core3 -- Packet Type: 1
-
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
-
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
-
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
-
-Received from core3 -- Packet Type: 1
-
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
-
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
-
-Received from core3 -- Packet Type: 1
-
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
-
-Received from core3 -- Packet Type: 1
-
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
-
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
-
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
-
-Received from core3 -- Packet Type: 1
-
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
-
-Received from core3 -- Packet Type: 1
-
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
-
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
-
-Received from core3 -- Packet Type: 1
-
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
-
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
-
-Received from core3 -- Packet Type: 1
-
-Received from core3 -- Packet Type: 1
-
-Received from core3 -- Packet Type: 1
-
-Received from core3 -- Packet Type: 1
-
-Received from core3 -- Packet Type: 1
-
-Received from core3 -- Packet Type: 1
-
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
-
-Received from core3 -- Packet Type: 1
-
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
-
-Received from core3 -- Packet Type: 1
-
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
-
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
-
-Received from core3 -- Packet Type: 1
-
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
-
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
-
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
+Received from core1 -- Packet Type: 0
 
-Received from core3 -- Packet Type: 1
-
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
-
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
-
-Received from core3 -- Packet Type: 1
-
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
+Received from core2 -- Packet Type: 1
 
-Received from core3 -- Packet Type: 1
+Received from core0 -- Packet Type: 0
 
 Received from core3 -- Packet Type: 1
-hf_recv(): error -204
 
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
+Received from core0 -- Packet Type: 0
 
-Received from core3 -- Packet Type: 1
+Received from core1 -- Packet Type: 2
 
-Received from core3 -- Packet Type: 1
+Received from core2 -- Packet Type: 1
 
-Received from core3 -- Packet Type: 1
+Received from core3 -- Packet Type: 0
+Ack detected!!
+Gaussian step...
+Waiting for a buffer...
 
-Received from core3 -- Packet Type: 1
+TX MODE
 
-Received from core3 -- Packet Type: 1
+Debug i: 3
+Received from core3
+Received ERROR...
 
-Received from core3 -- Packet Type: 1
+TX MODE
 
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
+Debug i: 2
+Received from core2
+Received ready buffer...
+Preparing a gaussian buffer...
+Sending buffer...
+Sending a packet to: Core 2 Port 1000 Channel 4
+Waiting for ack...
 
-Received from core3 -- Packet Type: 1
+Received from core0 -- Packet Type: 2
 
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
+Received from core3 -- Packet Type: 0
 
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
+Received from core2 -- Packet Type: 0
+Ack detected!!
+Gaussian step...
+Waiting for a buffer...
 
-Received from core3 -- Packet Type: 1
+TX MODE
 
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
+Debug i: 2
+Received from core2
+Received ERROR...
 
-Received from core3 -- Packet Type: 1
+TX MODE
 
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
+Debug i: 3
+Received from core3
+Received image block buffer...
+Sending ack...
+Sending a packet to: Core 3 Port 1000 Channel 4
+Preparing a gaussian buffer...
+Sending buffer...
+Sending a packet to: Core 3 Port 1000 Channel 4
+Waiting for ack...
 
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
+Received from core2 -- Packet Type: 0
 
 Received from core3 -- Packet Type: 1
-hf_recv(): error -204
 
-Received from core3 -- Packet Type: 1
+Received from core2 -- Packet Type: 2
 
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
+Received from core3 -- Packet Type: 0
+Ack detected!!
+Gaussian step...
+Waiting for a buffer...
 
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
+TX MODE
 
-Received from core3 -- Packet Type: 1
+Debug i: 3
+Received from core3
+Received ERROR...
 
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
+TX MODE
 
-Received from core3 -- Packet Type: 1
+Debug i: 3
+Received from core3
+Received ERROR...
 
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
+TX MODE
 
-Received from core3 -- Packet Type: 1
-hf_recv(): error -204
+Debug i: 3
+Received from core3
+Received image block buffer...
+Sending ack...
+Sending a packet to: Core 3 Port 1000 Channel 4
+Preparing a gaussian buffer...
+Sending buffer...
+Sending a packet to: Core 3 Port 1000 Channel 4
+Waiting for ack...
 
-Received from core3 -- Packet Type: 1
+Received from core3 -- Packet Type: 0
+Ack detected!!
+Gaussian step...
+Waiting for a buffer...

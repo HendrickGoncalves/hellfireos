@@ -69,6 +69,8 @@ void * master_waitForBuffer(void) {
 	int32_t i = -1;
 	corePacket buffer;
 
+	currentCore = 5;
+
 	if(firstTime) {
 		sent = 0;
 		firstTime = 0;
@@ -85,7 +87,7 @@ void * master_waitForBuffer(void) {
 		memset((uint8_t *)&buffer, 0, sizeof(corePacket));
 		receive((uint8_t *)&buffer, i);
 
-		printf("\nReceived from core%d\n", currentCore);
+		printf("Received from core%d\n", currentCore);
 
 		switch (buffer.packetType) {
 		case READY:
@@ -121,12 +123,12 @@ void * master_waitAck(void) {
 		memset((uint8_t *)&buffer, 0, sizeof(corePacket));
 		receive((uint8_t *)&buffer, i);
 
-		printf("\nReceived from core%d -- Packet Type: %d\n", currentCore, buffer.packetType);
+		printf("\nReceived from core%d -- Packet Type: %d\n", i, buffer.packetType);
 
-		if(buffer.packetType == ACK) {
+		if(buffer.packetType == ACK && i == currentCore) {
 			printf("Ack detected!!\n");
 			currentCore = 5;
-			memset((uint8_t *)&rwBuffer, 0, sizeof(corePacket));
+			memset((uint8_t *)&buffer, 0, sizeof(corePacket));
 			return master_gaussian;
 		}
 	}
@@ -242,6 +244,7 @@ void * slave_waitingForPacket(void) {
 }
 
 void * slave_sendAck(void) {
+	int32_t i = 0;
 	printf("Packet received!\n");
 	printf("Sending ack...\n");
 
@@ -250,10 +253,11 @@ void * slave_sendAck(void) {
 	memset(buffer.buff, 0, sizeof(buffer.buff));
 	buffer.packetType = ACK;
 
-	sender((int8_t *)&buffer, CORE4, (int16_t)hf_cpuid(), 5000); 
-	memset(&buffer, 0, sizeof(corePacket));
-
-	delay_ms(50);
+	for (i = 0; i < 3; i++) {
+		sender((int8_t *)&buffer, CORE4, (int16_t)hf_cpuid(), 5000); 
+		memset(&buffer, 0, sizeof(corePacket));	
+		delay_ms(50);
+	}
 
 	return slave_filter;
 }

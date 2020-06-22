@@ -1,7 +1,7 @@
 
 KERNEL: booting...
 ===========================================================
-HellfireOS v2.19.03 (4.9.3) [Jun 22 2020, 16:28:28]
+HellfireOS v2.19.03 (4.9.3) [Jun 22 2020, 16:58:09]
 Embedded Systems Group - GSE, PUCRS - [2007 - 2019]
 ===========================================================
 
@@ -20,6 +20,6 @@ KERNEL: this is core #5
 KERNEL: NoC queue init, 64 packets
 KERNEL: NoC driver registered
 HAL: _task_init()
-KERNEL: [idle task], id: 0, p:0, c:0, d:0, addr: 10000dc8, sp: 100083f0, ss: 1024 bytes
+KERNEL: [idle task], id: 0, p:0, c:0, d:0, addr: 10000dec, sp: 10008420, ss: 1024 bytes
 KERNEL: free heap: 489472 bytes
 KERNEL: HellfireOS is up
