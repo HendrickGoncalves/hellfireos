@@ -5,15 +5,18 @@
 #include <hellfire.h>
 #include <noc.h>
 
-#define MAX_BLOCK_SIZE 1684 //bytes / parte
-#define BLOCK_SIZE 1444 //38x38
+#define GAUSS_BLOCK_SIZE 36*36
+#define GAUSS_HEIGHT 36
+#define GAUSS_WIDTH 36
 
-#define MAX_SEQUENCE 64 //64 partes
+#define SOBEL_BLOCK_SIZE 42*42
+#define SOBEL_HEIGHT 42
+#define SOBEL_WIDTH 42
+
+#define MAX_SEQUENCE 64 
 
 #define TOTAL_HEIGHT 256
 #define TOTAL_WIDTH 256
-#define HEIGHT 38
-#define WIDTH 38
 
 #define MASTER_PORT 5000
 #define SLAVE_PORT 1000
@@ -27,16 +30,23 @@ typedef enum {
 } core_type;
 
 typedef enum {
+    ACK = 0,
+    READY,
+    IMG_BLOCK
+} packet_type;
+
+typedef enum {
     GAUSSIAN = 0,
     SOBEL
 } filter_type;
 
 typedef struct core_packet {
     uint8_t ready;
-    uint8_t sequence;
+    int32_t sequence;
     core_type id;
     filter_type filter;
-    uint8_t buff[BLOCK_SIZE]; //38x38
+    packet_type packetType;
+    uint8_t buff[SOBEL_BLOCK_SIZE]; 
 } __attribute__((packed)) corePacket;
 
 /* ---------------------- FUNCTIONS ---------------- */
@@ -60,19 +70,25 @@ void core4(void);
 
 void master_fsm(void);
 
-void * gaussian(void);
-void * sobel(void);
+void * master_gaussian(void);
+void * master_sobel(void);
 
-void * prepareBuffer(void);
-void * sendBuffer(void);
-void * waitForBuffer(void);
+void * master_prepareBuffer(void);
+void * master_appendImage(void);
+void * master_sendAck(void);
+void * master_waitAck(void);
+void * master_sendBuffer(void);
+void * master_waitForBuffer(void);
 
 /* ----------------- SLAVE STATE MACHINE ------------ */
 
 void slave_fsm(void);
 
-void * filter(void);
-void * sendPacket(void);
-void * waitingForPacket(void);
+void * slave_filter(void);
+void * slave_sendPacket(void);
+void * slave_sendReady(void);
+void * slave_sendAck(void);
+void * slave_waitAck(void);
+void * slave_waitingForPacket(void);
 
 #endif

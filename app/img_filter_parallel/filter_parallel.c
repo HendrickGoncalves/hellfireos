@@ -5,7 +5,7 @@ uint32_t i, j, k = 0;
 uint32_t time;
 uint32_t sequence = 0;
 
-corePacket cores[4];
+//corePacket cores[4];
 typedef void *(*state_func)();
 core_type currentCore;
 
@@ -13,8 +13,11 @@ uint8_t gaussianOutput[TOTAL_HEIGHT*TOTAL_WIDTH];
 
 uint8_t firstTime = 1;
 uint8_t sent = 0;
+uint8_t filtered = 0;
 
 corePacket rwBuffer;
+
+filter_type currentFilter;
 
 /* -----------------------------------  THREADS ---------------------------  */
 
@@ -60,7 +63,7 @@ void core0(void) {
 
 /* -----------------------------------  MASTER STATE MACHINE ---------------------------  */
 
-void * waitForBuffer(void) {
+void * master_waitForBuffer(void) {
 	int32_t i = 0;
 	corePacket buffer;
 
@@ -73,162 +76,218 @@ void * waitForBuffer(void) {
 	i = hf_recvprobe(); //retorna o valor do channel que recebeu algo. se for < 0 é porque nenhum canal recebeu alguma coisa
 
 	if (i >= 0) {
-		currentCore =  (i <= 4) ? (core_type)i : 5;
+		currentCore = (core_type)i;
 	
 		memset((uint8_t *)&buffer, 0, sizeof(corePacket));
 		receive((uint8_t *)&buffer, i);
 
-		switch (currentCore) {
-			case CORE0:
+		printf("\nReceived from core%d\n", currentCore);
 
-				printf("\nReceived from core0\n");
-
-				if(!startBuffer(buffer)) {
-					appendBuffer(&buffer, gaussianOutput, currentCore);
-					cores[0].sequence++;
-					sequence++;
-				} else {
-					printf("Start buffer received!\n");
-					cores[0].ready = 1;
-				}
-
-				return gaussian;
-			case CORE1:
-			
-				printf("\nReceived from core1\n");
-
-				if(!startBuffer(buffer)) {
-					appendBuffer(&buffer, gaussianOutput, currentCore);
-					cores[1].sequence++;
-					sequence++;
-				} else {
-					printf("Start buffer received!\n");
-					cores[1].ready = 1;
-				}
-
-				return gaussian;
-			case CORE2:
-				
-				printf("\nReceived from core2\n");
-
-				if(!startBuffer(buffer)) {
-					appendBuffer(&buffer, gaussianOutput, currentCore);
-					cores[2].sequence++;
-					sequence++;
-				} else {
-					printf("Start buffer received!\n");
-					cores[2].ready = 1;
-				}
-
-				return gaussian;
-			case CORE3:
-
-				printf("\nReceived from core3\n");
-
-				if(!startBuffer(buffer)) {
-					appendBuffer(&buffer, gaussianOutput, currentCore);
-					cores[3].sequence++;
-					sequence++;
-				} else {
-					printf("Start buffer received!\n");
-					cores[3].ready = 1;
-				}
-		
-				return gaussian;
-			default:
-				printf("Default: %d", i);
-				return waitForBuffer;
+		switch (buffer.packetType) {
+		case READY:
+			printf("Received ready buffer...\n");
+			return master_prepareBuffer;
+		case IMG_BLOCK:
+			printf("Received image block buffer...\n");
+			return master_sendAck;
+		default:
+			printf("Received ERROR...\n");
+			return master_waitForBuffer;
 		}
 	}
 
-	return waitForBuffer;
+	return master_waitForBuffer;
 }
 
-void * sendBuffer(void) {
-	int32_t i;
+void * master_waitAck(void) {
+	int32_t i = 0;
+	corePacket buffer;
 
+	if(firstTime) {
+		firstTime = 0;
+		printf("Waiting for ack...\n");
+	}
+
+	i = hf_recvprobe(); 
+
+	if (i >= 0) {
+
+		if((core_type)i != currentCore)
+			return master_waitAck;
+	
+		memset((uint8_t *)&buffer, 0, sizeof(corePacket));
+		receive((uint8_t *)&buffer, i);
+
+		printf("\nReceived from core%dn", currentCore);
+
+		if(buffer.packetType == ACK) {
+			currentCore = 5;
+			memset((uint8_t *)&rwBuffer, 0, sizeof(corePacket));
+			return master_gaussian;
+		}
+	}
+
+	return master_sendBuffer;
+}
+
+void * master_sendAck(void) {
+	printf("Sending ack...\n");
+	corePacket buffer;
+
+	buffer.packetType = ACK;
+
+	memset(buffer.buff, 0, sizeof(buffer.buff));
+
+	sender((int8_t *)&buffer, currentCore, (int16_t)CORE4, 1000); 
+
+	return master_prepareBuffer;
+}
+
+void * master_sendBuffer(void) {
 	printf("Sending buffer...\n");
 
 	sender((int8_t *)&rwBuffer, currentCore, (int16_t)CORE4, 1000); //envia para onde ele recebeu
-	memset((uint8_t *)&rwBuffer, 0, sizeof(corePacket));
+	//memset((uint8_t *)&rwBuffer, 0, sizeof(corePacket));
 
-	sent = 1;
+	firstTime = 0;
 
-	return gaussian;
+	return master_waitAck;
 }
 
-void * prepareBuffer(void) {
-	printf("Preparing buffer...\n");
+void * master_prepareBuffer(void) {
+	uint32_t size = 0;
 
-	memset(rwBuffer.buff, '2', BLOCK_SIZE);
+	switch (currentFilter)
+	{
+	case GAUSSIAN:
+		printf("Preparing a gaussian buffer...\n");
+		size = GAUSS_BLOCK_SIZE;
+		break;
+	case SOBEL:
+		printf("Preparing a sobel buffer...\n");
+		size = SOBEL_BLOCK_SIZE;
+		break;
+	}
+	
+	rwBuffer.packetType = IMG_BLOCK;
 
-	return sendBuffer;
+	memset(rwBuffer.buff, '2', size);
+
+	return master_sendBuffer;
 }
 
-void * gaussian(void) {
+void * master_gaussian(void) {
 	printf("Gaussian step...\n");
 
 	firstTime = 1;
 
-	if(cores[currentCore].ready && !sent) return prepareBuffer;
+	currentFilter = GAUSSIAN;
 
-	return waitForBuffer;
+	/*adicionar lógica pra mudar de filtro */
+
+	return master_waitForBuffer;
 }
 
 /* -----------------------------------  SLAVE STATE MACHINE ---------------------------  */
 
-void * filter(void) {
+void * slave_filter(void) {
 	printf("Filtering...\n");
-	strcpy((char *)rwBuffer.buff, "TEUCU");
+	
+	switch (rwBuffer.filter)
+	{
+	case GAUSSIAN:
+		printf("Doing gaussian...\n");
+		break;
+	case SOBEL:
+		printf("Doing sobel...\n");
+		break;
+	}
 
-	return sendPacket;
+	return slave_sendPacket;
 }
 
-void * waitingForPacket(void) {
+void * slave_waitAck(void) {
+	corePacket buffer;
+
+	printf("Waiting for ack...\n");
+
+	memset((uint8_t *)&buffer, 0, sizeof(corePacket));
+	receive((uint8_t *)&buffer, CORE4);
+
+	return (buffer.packetType == ACK) ? slave_waitingForPacket : slave_sendPacket;
+}
+
+void * slave_waitingForPacket(void) {
+	int32_t i = -1;
+
 	printf("Waiting for packet...\n");
 
-	memset((uint8_t *)&rwBuffer, 0, sizeof(corePacket));
-	receive((uint8_t *)&rwBuffer, CORE4);
+	i = hf_recvprobe();
 
-	return (rwBuffer.buff[0] != '\0' && strlen((char *)rwBuffer.buff) > 0) ? filter : waitingForPacket;
+	if(i >= 0) {
+		memset((uint8_t *)&rwBuffer, 0, sizeof(corePacket));
+		receive((uint8_t *)&rwBuffer, CORE4);
+	}
+
+	return (rwBuffer.packetType == IMG_BLOCK) && i >= 0 ? slave_sendAck : slave_sendReady;
 }
 
-void * sendPacket(void) {
+void * slave_sendAck(void) {
+	printf("Sending ack...\n");
+
+	corePacket buffer;
+
+	memset(buffer.buff, 0, sizeof(buffer.buff));
+	buffer.packetType = ACK;
+
+	sender((int8_t *)&buffer, CORE4, (int16_t)hf_cpuid(), 5000); 
+	memset(&buffer, 0, sizeof(corePacket));
+
+	return slave_filter;
+}
+
+void * slave_sendPacket(void) {
 	if(firstTime) {
-		memset(rwBuffer.buff, '1', BLOCK_SIZE);
 		firstTime = 0;
 		printf("Sending packet...\n");
 	}
 
-	sender((int8_t *)&rwBuffer, CORE4, (int16_t)hf_cpuid(), 5000); 
-	memset(rwBuffer.buff, 0, BLOCK_SIZE);
+	rwBuffer.packetType = IMG_BLOCK;
 
-	return waitingForPacket;
+	sender((int8_t *)&rwBuffer, CORE4, (int16_t)hf_cpuid(), 5000); 
+	//memset(rwBuffer.buff, 0, BLOCK_SIZE);
+
+	return slave_waitAck;
+}
+
+void * slave_sendReady(void) {
+	printf("Sending ready packet...\n");
+
+	memset(rwBuffer.buff, 0, sizeof(rwBuffer.buff));
+
+	rwBuffer.packetType = READY;
+	memset(rwBuffer.buff, 0, sizeof(rwBuffer.buff));
+	sender((int8_t *)&rwBuffer, CORE4, (int16_t)hf_cpuid(), 5000); 
+	
+	memset(rwBuffer.buff, 0, sizeof(rwBuffer.buff));
+
+	return slave_waitingForPacket;
 }
 
 /* ------------------------------------------ FUNCTIONS ----------------------------- */
 
 void slave_fsm(void) {
-	state_func slaveState = sendPacket;
+	state_func slaveState = slave_sendReady;
 
     while(1)
         slaveState = (state_func)(*slaveState)();
 }
 
 void master_fsm(void) {
-	state_func masterState = gaussian;
-    
-	initCores();
+	state_func masterState = master_gaussian;
 
     while(1)
         masterState = (state_func)(*masterState)();
-}
-
-void initCores(void) {
-	cores[0].id = CORE0;
-	cores[1].id = CORE1;
-	cores[2].id = CORE2;
-	cores[3].id = CORE3;
 }
 
 void sender(int8_t *buf, core_type targetCore, int16_t channel, uint16_t targetPort) {
@@ -250,35 +309,6 @@ void receive(uint8_t *buf, int32_t src_channel) {
 			
 	if (val)
 		printf("hf_recv(): error %d\n", val);
-}
-
-uint8_t startBuffer(corePacket buffer) {
-	return (buffer.buff[0] == '1' && buffer.buff[BLOCK_SIZE-1] == '1') ? 1 : 0;
-}
-
-void appendBuffer(corePacket *buffer, uint8_t *output, core_type coreId) {
-	int32_t i, j;
-	int32_t range, this_height, this_width;
-
-	printf("Appending buffer...\n");
-
-	range = (sequence * HEIGHT) - 1;
-	this_height = HEIGHT + range;
-	this_width = this_height;
-
-	//printf("Debug append: \n");
-	for(i = range; i < this_height; i++) {
-		if (i > 1 && i < this_height-2) {
-			for(j = 0; j < this_width; j++) {
-				output[((i * this_width) + j)] = buffer->buff[((i * this_width) + j)];
-				//printf("%X", output[((i * this_width) + j)]);
-			}
-		} else {
-			output[((i * this_width) + j)] = buffer->buff[((i * this_width) + j)];	
-			//printf("%X", output[((i * this_width) + j)]);
-		}
-	}
-	//printf("\n");
 }
 
 void app_main(void) {
