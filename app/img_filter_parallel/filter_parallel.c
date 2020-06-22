@@ -1,25 +1,26 @@
 #include "filter.h"
 #include "image.h"
 
-uint32_t i, j, k = 0;
+int32_t k = 0, l = 0;
+
 uint32_t time;
 uint32_t sequence = 0;
 
-//corePacket cores[4];
 typedef void *(*state_func)();
 core_type currentCore;
 
-uint8_t gaussianOutput[TOTAL_HEIGHT*TOTAL_WIDTH];
+uint8_t gaussianAux[GAUSS_IMG_OUTPUT];
+uint8_t gaussianOutput[IMG_SIZE];
+//uint8_t sobelOuput[]
 
 uint8_t firstTime = 1;
 uint8_t sent = 0;
 uint8_t filtered = 0;
+uint8_t initBuffer = 1;
 
 corePacket rwBuffer;
 
 filter_type currentFilter;
-
-int32_t nAcks = 0;
 
 /* -----------------------------------  THREADS ---------------------------  */
 
@@ -95,6 +96,8 @@ void * master_waitForBuffer(void) {
 			return master_prepareBuffer;
 		case IMG_BLOCK:
 			printf("Received image block buffer...\n");
+			memcpy((uint8_t *)&rwBuffer, (uint8_t *)&buffer, sizeof(corePacket)); //copia para dentro do buffer antes do append
+
 			return master_sendAck;
 		default:
 			printf("Received ERROR...\n");
@@ -136,6 +139,13 @@ void * master_waitAck(void) {
 	return master_waitAck;
 }
 
+void * master_appendBuffer(void) {
+
+	appendBuffer(gaussianAux, rwBuffer.buff, rwBuffer.l, rwBuffer.k, currentFilter);
+
+	return master_prepareBuffer;
+}
+
 void * master_sendAck(void) {
 	printf("Sending ack...\n");
 	corePacket buffer;
@@ -148,71 +158,108 @@ void * master_sendAck(void) {
 
 	delay_ms(50);
 
-	return master_prepareBuffer;
+	return master_appendBuffer;
 }
 
 void * master_sendBuffer(void) {
 	printf("Sending buffer...\n");
 
 	sender((int8_t *)&rwBuffer, currentCore, (int16_t)CORE4, 1000); //envia para onde ele recebeu
-	//memset((uint8_t *)&rwBuffer, 0, sizeof(corePacket));
 
 	firstTime = 1;
-
-	//delay_ms(50);
 
 	return master_waitAck;
 }
 
 void * master_prepareBuffer(void) {
-	uint32_t size = 0;
 
-	switch (currentFilter)
-	{
+	memset(rwBuffer.buff, 0, sizeof(rwBuffer.buff));
+
+	switch (currentFilter) {
 	case GAUSSIAN:
 		printf("Preparing a gaussian buffer...\n");
-		size = GAUSS_BLOCK_SIZE;
+
+		rwBuffer.filter = GAUSSIAN;
+		splitGauss(image, rwBuffer.buff, l, k); //split matrix
+
 		break;
 	case SOBEL:
 		printf("Preparing a sobel buffer...\n");
-		size = SOBEL_BLOCK_SIZE;
 		break;
 	}
 	
 	rwBuffer.packetType = IMG_BLOCK;
+	rwBuffer.k = k;
+	rwBuffer.l = l;
 
-	memset(rwBuffer.buff, '2', size);
+	k = !((l+1) % 8) && l > 0 ? k+32 : k;
+	l = !((l+1) % 8) && l > 0 ? 0 : l+1;
 
 	return master_sendBuffer;
 }
 
+void * master_sobel(void) {
+	return master_sobel;
+}
+
 void * master_gaussian(void) {
+	//uint8_t *gaussianOutput;
+
 	printf("Gaussian step...\n");
 
+	// if(initBuffer) {
+	// 	gaussianAux = (uint8_t *)malloc(GAUSS_IMG_OUTPUT * sizeof(uint8_t));
+	// 	initBuffer = 0;
+	// }
+
 	firstTime = 1;
-	nAcks = 0;
 
 	currentFilter = GAUSSIAN;
 
+	if(sequence < 64) return master_waitForBuffer;
+
+	printf("\n\nGauss finished!\n");
+	
+	// gaussianOutput = (uint8_t *)malloc(IMG_SIZE * sizeof(uint8_t));
+
+	// cutImage(gaussianOutput, gaussianAux, GAUSSIAN);
+	// showImg(gaussianOutput);
+
+	// free(gaussianAux);
+	// free(gaussianOutput);
+
 	/*adicionar lógica pra mudar de filtro */
 
-	return master_waitForBuffer;
+	return master_sobel;
 }
 
 /* -----------------------------------  SLAVE STATE MACHINE ---------------------------  */
 
 void * slave_filter(void) {
+	uint8_t *filterOutput;
+	int32_t size;
+
 	printf("Filtering...\n");
 	
-	switch (rwBuffer.filter)
-	{
+	switch (rwBuffer.filter) {
 	case GAUSSIAN:
 		printf("Doing gaussian...\n");
+
+		size = GAUSS_BLOCK_SIZE;
+		filterOutput = (uint8_t *)malloc(GAUSS_BLOCK_SIZE * sizeof(uint8_t));
+
+        do_gaussian(rwBuffer.buff, filterOutput, GAUSS_HEIGHT, GAUSS_WIDTH); //filtra com o buffer que ele recebeu
+
 		break;
 	case SOBEL:
 		printf("Doing sobel...\n");
 		break;
 	}
+
+	memcpy(rwBuffer.buff, filterOutput, size);
+
+	free(filterOutput);
+	filterOutput = NULL;
 
 	return slave_sendPacket;
 }
@@ -271,7 +318,6 @@ void * slave_sendPacket(void) {
 	rwBuffer.packetType = IMG_BLOCK;
 
 	sender((int8_t *)&rwBuffer, CORE4, (int16_t)hf_cpuid(), 5000); 
-	//memset(rwBuffer.buff, 0, BLOCK_SIZE);
 
 	delay_ms(50);
 
@@ -338,10 +384,10 @@ void app_main(void) {
 		hf_spawn(core4, 0, 0, 0, "master", 4096);
 	else if(hf_cpuid() == 0) 
 		hf_spawn(core0, 0, 0, 0, "slave0", 4096);
-	else if(hf_cpuid() == 1) 
-		hf_spawn(core1, 0, 0, 0, "slave1", 4096);
-	else if(hf_cpuid() == 2) 
-		hf_spawn(core2, 0, 0, 0, "slave2", 4096);
-	else if(hf_cpuid() == 3) 
-		hf_spawn(core3, 0, 0, 0, "slave3", 4096);
+	// else if(hf_cpuid() == 1) 
+	// 	hf_spawn(core1, 0, 0, 0, "slave1", 4096);
+	// else if(hf_cpuid() == 2) 
+	// 	hf_spawn(core2, 0, 0, 0, "slave2", 4096);
+	// else if(hf_cpuid() == 3) 
+	// 	hf_spawn(core3, 0, 0, 0, "slave3", 4096);
 }

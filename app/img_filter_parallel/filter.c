@@ -1,5 +1,7 @@
-#include <hellfire.h>
-#include "image.h"
+#include "filter.h"
+
+#define WIDTH 32
+#define HEIGHT 32
 
 uint8_t gaussian(uint8_t buffer[5][5]){
 	int32_t sum = 0, mpixel;
@@ -108,50 +110,172 @@ void do_sobel(uint8_t *input, uint8_t *output, int32_t width, int32_t height){
 	}
 }
 
-void task(void){
-	uint32_t i, j, k = 0;
-	uint8_t *img, *img2;
-	uint32_t time;
-	
-	while(1) {
-		img = (uint8_t *) malloc(height * width);
-		img2 = (uint8_t *) malloc(height * width);
-		if (img == NULL || img2 == NULL){
-			printf("\nmalloc() failed!\n");
-			for(;;);
-		}
+void splitSobel(uint8_t *input, uint8_t *output, int32_t l, int32_t k ) {
+    uint8_t buffAux[266*266];
+    int32_t i, j;
+	int32_t colunm;
 
-		printf("\n\nstart of processing!\n\n");
+    memset(buffAux, 0, sizeof(buffAux));
 
-		time = _readcounter();
+    colunm = (l * HEIGHT) > 0 ? (l * HEIGHT) : 0;
+    
+    for (i = 0; i < 256; i++) {
+        for (j = 0; j < 256; j++) {
+            buffAux[(((i+5) * 266) + j) + 5] =  input[((i * 256) + j)];
+        }    
+    }
 
-		do_gaussian(image, img, width, height);
-		do_sobel(img, img2, width, height);
+    for(i = 0; i < 42; i++) {
+        for (j = 0; j < 42; j++) {
+            output[((i * 42) + j)] = buffAux[(((i+k) * 266) + (j+colunm))];
+        }
+    }
+}
 
-		time = _readcounter() - time;
+void splitGauss(uint8_t *input, uint8_t *output, int32_t l, int32_t k ) {
+    uint8_t buffAux[260*260];
+    int32_t i, j;
+	int32_t colunm;
 
-		printf("done in %d clock cycles.\n\n", time);
+    memset(buffAux, 0, sizeof(buffAux));
 
-		printf("\n\nint32_t width = %d, height = %d;\n", width, height);
+    colunm = (l * HEIGHT) > 0 ? (l * HEIGHT) : 0;
+    
+    for (i = 0; i < 256; i++) {
+        for (j = 0; j < 256; j++) {
+            buffAux[(((i+2) * 260) + j) + 2] =  input[((i * 256) + j)];
+        }    
+    }
+
+    for(i = 0; i < 36; i++) {
+        for (j = 0; j < 36; j++) {
+            output[((i * 36) + j)] = buffAux[(((i+k) * 260) + (j+colunm))];
+        }
+    }
+}
+
+void cutImage(uint8_t *output, uint8_t *newMatriz, filter_type filter) {
+    int32_t i = 0, j = 0;
+ 
+    switch (filter) {
+    case GAUSSIAN:
+        for (i = 0; i < 256; i++) {
+            for (j = 0; j < 256; j++) {  
+                output[((i * 256) + j)] = newMatriz[(((i+2) * 260) + j) + 2];
+            }    
+        }
+
+        break;
+    case SOBEL:
+        for (i = 0; i < 256; i++) {
+            for (j = 0; j < 256; j++) {  
+                output[((i * 256) + j)] = newMatriz[(((i+5) * 266) + j) + 5];
+            }    
+        }
+
+        break;
+    }
+}
+
+void appendBuffer(uint8_t *newMatriz, uint8_t *buff, int32_t l, int32_t k, filter_type filter) {
+    int32_t i = 0, j = 0, colunm = 0;
+
+    colunm = (l * HEIGHT) > 0 ? (l * HEIGHT) : 0;
+
+    switch (filter) {
+    case GAUSSIAN:
+        for(i = 0; i < 32; i++) {
+            for (j = 0; j < 32; j++) {
+                newMatriz[(((i+k) * 260) + (j+colunm))] = buff[(((i+2) * 36) + j+2)]; 
+            }
+        }
+
+        break;
+    case SOBEL:
+        for(i = 0; i < 32; i++) {
+            for (j = 0; j < 32; j++) {
+                newMatriz[(((i+k+4) * 266) + (j+colunm+4))] = buff[(((i+4) * 42) + j+4)];
+            }
+        }
+
+        break;
+    }
+}
+
+void showImg(uint8_t *img) {
+    int32_t i, j, k = 0;
+    int32_t this_width = 256, this_height = 256;
+
+    printf("int32_t width = %d, height = %d;\n", this_width, this_height);
 		printf("uint8_t image[] = {\n");
-		for (i = 0; i < height; i++){
-			for (j = 0; j < width; j++){
-				printf("0x%x", img2[i * width + j]);
-				if ((i < height-1) || (j < width-1)) printf(", ");
+		for (i = 0; i < this_height; i++){
+			for (j = 0; j < this_width; j++){
+				printf("0x%x", img[i * this_width + j]);
+				if ((i < this_height-1) || (j < this_width-1)) printf(", ");
 				if ((++k % 16) == 0) printf("\n");
 			}
 		}
-		printf("};\n");
-
-		free(img);
-		free(img2);
-
-		printf("\n\nend of processing!\n");
-		panic(0);
-	}
-		
+	printf("};\n");
 }
 
-void app_main(void) {
-	hf_spawn(task, 0, 0, 0, "filter", 2048);
-}
+// int main(void) {
+//     uint8_t newMatriz[260*260], matriz[266*266]; //16x6
+//     uint8_t output[36*36], out[42*42]; //4x4
+//     uint8_t aux[36*36], auxSobel[42*42];
+//     uint8_t finalImage[256*256], auxFinal[256*256], finalGauss[256*256];
+//     int i, j;
+//     int32_t cnt = 0;
+//     int32_t k = 0, l = 0;
+
+//     cnt = 0;
+
+//     memset(newMatriz, 0, sizeof(newMatriz));
+//     memset(output, 0, sizeof(output));
+//     memset(aux, 0, sizeof(aux));
+//     memset(finalImage, 0, sizeof(finalImage));
+
+//     while (cnt < 64) { 
+//         splitGauss(image, output, l, k);
+
+//         do_gaussian(output, aux, 36, 36);
+
+//         appendBuffer(newMatriz, aux, l, k, 1);
+
+//         k = !((l+1) % 8) && l > 0 ? k+32 : k;
+//         l = !((l+1) % 8) && l > 0 ? 0 : l+1;
+
+//         cnt++;
+//     }
+
+//     cutImage(finalGauss, newMatriz, 1);
+//     memset(newMatriz, 0, sizeof(newMatriz));
+//     memset(output, 0, sizeof(output));
+//     memset(aux, 0, sizeof(aux));
+
+//     cnt = 0;
+//     k = 0;
+//     l = 0;
+
+//     memset(matriz, 0, sizeof(matriz));
+
+//     //do_sobel(finalGauss, finalImage, 256, 256);
+
+//     while (cnt < 64) {
+//         splitSobel(finalGauss, out, l, k);
+
+//         do_sobel(out, auxSobel, 42, 42);
+
+//         appendBuffer(matriz, auxSobel, l, k, 0);
+
+//         k = !((l+1) % 8) && l > 0 ? k+32 : k;
+//         l = !((l+1) % 8) && l > 0 ? 0 : l+1;
+
+//         cnt++;
+//     }
+
+//     cutImage(finalImage, matriz, 0);
+
+//     showImg(finalImage);
+    
+
+// }
