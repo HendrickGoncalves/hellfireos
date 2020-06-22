@@ -41,6 +41,7 @@ images:
 		hexdump -v -e '4/1 "%02x" "\n"' code$$i.bin > code$$i.txt \
 	;done
 
+	cp *.bin ../../usr/sim/mpsoc_sim/objects/
 clean:
 	rm -rf *.o *~ *.elf *.bin *.cnt *.lst *.sec *.txt
 

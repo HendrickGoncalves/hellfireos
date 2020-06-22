@@ -19,6 +19,8 @@ corePacket rwBuffer;
 
 filter_type currentFilter;
 
+int32_t nAcks = 0;
+
 /* -----------------------------------  THREADS ---------------------------  */
 
 void core4(void) {
@@ -64,7 +66,7 @@ void core0(void) {
 /* -----------------------------------  MASTER STATE MACHINE ---------------------------  */
 
 void * master_waitForBuffer(void) {
-	int32_t i = 0;
+	int32_t i = -1;
 	corePacket buffer;
 
 	if(firstTime) {
@@ -76,6 +78,8 @@ void * master_waitForBuffer(void) {
 	i = hf_recvprobe(); //retorna o valor do channel que recebeu algo. se for < 0 é porque nenhum canal recebeu alguma coisa
 
 	if (i >= 0) {
+		printf("\nTX MODE\n");
+
 		currentCore = (core_type)i;
 	
 		memset((uint8_t *)&buffer, 0, sizeof(corePacket));
@@ -110,24 +114,24 @@ void * master_waitAck(void) {
 
 	i = hf_recvprobe(); 
 
+	//nAcks++;
+
 	if (i >= 0) {
 
-		if((core_type)i != currentCore)
-			return master_waitAck;
-	
 		memset((uint8_t *)&buffer, 0, sizeof(corePacket));
 		receive((uint8_t *)&buffer, i);
 
-		printf("\nReceived from core%dn", currentCore);
+		printf("\nReceived from core%d -- Packet Type: %d\n", currentCore, buffer.packetType);
 
 		if(buffer.packetType == ACK) {
+			printf("Ack detected!!\n");
 			currentCore = 5;
 			memset((uint8_t *)&rwBuffer, 0, sizeof(corePacket));
 			return master_gaussian;
 		}
 	}
 
-	return master_sendBuffer;
+	return master_waitAck;
 }
 
 void * master_sendAck(void) {
@@ -140,6 +144,8 @@ void * master_sendAck(void) {
 
 	sender((int8_t *)&buffer, currentCore, (int16_t)CORE4, 1000); 
 
+	delay_ms(50);
+
 	return master_prepareBuffer;
 }
 
@@ -149,7 +155,9 @@ void * master_sendBuffer(void) {
 	sender((int8_t *)&rwBuffer, currentCore, (int16_t)CORE4, 1000); //envia para onde ele recebeu
 	//memset((uint8_t *)&rwBuffer, 0, sizeof(corePacket));
 
-	firstTime = 0;
+	firstTime = 1;
+
+	//delay_ms(50);
 
 	return master_waitAck;
 }
@@ -180,6 +188,7 @@ void * master_gaussian(void) {
 	printf("Gaussian step...\n");
 
 	firstTime = 1;
+	nAcks = 0;
 
 	currentFilter = GAUSSIAN;
 
@@ -220,7 +229,7 @@ void * slave_waitAck(void) {
 void * slave_waitingForPacket(void) {
 	int32_t i = -1;
 
-	printf("Waiting for packet...\n");
+	printf("Waiting for a packet...\n");
 
 	i = hf_recvprobe();
 
@@ -233,6 +242,7 @@ void * slave_waitingForPacket(void) {
 }
 
 void * slave_sendAck(void) {
+	printf("Packet received!\n");
 	printf("Sending ack...\n");
 
 	corePacket buffer;
@@ -242,6 +252,8 @@ void * slave_sendAck(void) {
 
 	sender((int8_t *)&buffer, CORE4, (int16_t)hf_cpuid(), 5000); 
 	memset(&buffer, 0, sizeof(corePacket));
+
+	delay_ms(50);
 
 	return slave_filter;
 }
@@ -257,6 +269,8 @@ void * slave_sendPacket(void) {
 	sender((int8_t *)&rwBuffer, CORE4, (int16_t)hf_cpuid(), 5000); 
 	//memset(rwBuffer.buff, 0, BLOCK_SIZE);
 
+	delay_ms(50);
+
 	return slave_waitAck;
 }
 
@@ -266,10 +280,11 @@ void * slave_sendReady(void) {
 	memset(rwBuffer.buff, 0, sizeof(rwBuffer.buff));
 
 	rwBuffer.packetType = READY;
-	memset(rwBuffer.buff, 0, sizeof(rwBuffer.buff));
-	sender((int8_t *)&rwBuffer, CORE4, (int16_t)hf_cpuid(), 5000); 
-	
-	memset(rwBuffer.buff, 0, sizeof(rwBuffer.buff));
+
+	sender((int8_t *)&rwBuffer, CORE4, (int16_t)hf_cpuid(), 5000); 	
+	memset((uint8_t *)&rwBuffer, 0, sizeof(corePacket));
+
+	delay_ms(50);
 
 	return slave_waitingForPacket;
 }
@@ -305,7 +320,10 @@ void receive(uint8_t *buf, int32_t src_channel) {
 	uint16_t cpu, port, size;
 	int16_t val;
 
+	//printf("\nTentando receber de channel %d\n", src_channel);
+
 	val = hf_recv(&cpu, &port, (int8_t *)buf, &size, src_channel);
+	//printf("\nDebug size: %d\n", size);
 			
 	if (val)
 		printf("hf_recv(): error %d\n", val);
