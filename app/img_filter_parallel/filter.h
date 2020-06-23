@@ -93,6 +93,7 @@ void * master_waitAck(void);
 void * master_sendBuffer(void);
 void * master_waitForBuffer(void);
 void * master_appendBuffer(void);
+void * master_sendNext(void);
 
 /* ----------------- SLAVE STATE MACHINE ------------ */
 
@@ -104,5 +105,6 @@ void * slave_sendReady(void);
 void * slave_sendAck(void);
 void * slave_waitAck(void);
 void * slave_waitingForPacket(void);
+void * slave_sendNext(void);
 
 #endif
