@@ -25,6 +25,9 @@
 #define MASTER_PORT 5000
 #define SLAVE_PORT 1000
 
+#define WIDTH 32
+#define HEIGHT 32
+
 typedef enum {
     CORE0 = 0,
     CORE1,

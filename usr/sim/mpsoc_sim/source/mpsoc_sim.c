@@ -533,7 +533,7 @@ static void mem_write(State *s, int size, int unsigned address, unsigned int val
 	switch(address){
 		case UART_WRITE:
 			HWMemory[2][cpu_n] &= ~IRQ_UART_WRITE_AVAILABLE;
-			putc(value, std_out);
+			fprintf(std_out, "%c", value);
 			return;
 		case GPIO0_OUT:
 			GPIO0OUT[cpu_n] = value;

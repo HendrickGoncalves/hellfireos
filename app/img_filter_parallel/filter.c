@@ -1,8 +1,5 @@
 #include "filter.h"
 
-#define WIDTH 32
-#define HEIGHT 32
-
 uint8_t gaussian(uint8_t buffer[5][5]){
 	int32_t sum = 0, mpixel;
 	uint8_t i, j;
@@ -132,19 +129,23 @@ void splitSobel(uint8_t *input, uint8_t *output, int32_t l, int32_t k ) {
     }
 }
 
-void splitGauss(uint8_t *input, uint8_t *output, int32_t l, int32_t k ) {
+void splitGauss(uint8_t *input, uint8_t *output, int32_t l, int32_t k) {
     uint8_t buffAux[260*260];
-    int32_t i, j;
-	int32_t colunm;
+    int32_t i = 0, j = 0;
+	int32_t colunm = 0;
 
     memset(buffAux, 0, sizeof(buffAux));
 
     colunm = (l * HEIGHT) > 0 ? (l * HEIGHT) : 0;
+
+    //printf("Spliting gaussian buffer: K %d l %d\n", k, l);
     
     for (i = 0; i < 256; i++) {
         for (j = 0; j < 256; j++) {
             buffAux[(((i+2) * 260) + j) + 2] =  input[((i * 256) + j)];
+           //printf(" %d", ((i+2) * 260) + j + 2);
         }    
+        //printf("\n");
     }
 
     for(i = 0; i < 36; i++) {
@@ -217,65 +218,3 @@ void showImg(uint8_t *img) {
 		}
 	printf("};\n");
 }
-
-// int main(void) {
-//     uint8_t newMatriz[260*260], matriz[266*266]; //16x6
-//     uint8_t output[36*36], out[42*42]; //4x4
-//     uint8_t aux[36*36], auxSobel[42*42];
-//     uint8_t finalImage[256*256], auxFinal[256*256], finalGauss[256*256];
-//     int i, j;
-//     int32_t cnt = 0;
-//     int32_t k = 0, l = 0;
-
-//     cnt = 0;
-
-//     memset(newMatriz, 0, sizeof(newMatriz));
-//     memset(output, 0, sizeof(output));
-//     memset(aux, 0, sizeof(aux));
-//     memset(finalImage, 0, sizeof(finalImage));
-
-//     while (cnt < 64) { 
-//         splitGauss(image, output, l, k);
-
-//         do_gaussian(output, aux, 36, 36);
-
-//         appendBuffer(newMatriz, aux, l, k, 1);
-
-//         k = !((l+1) % 8) && l > 0 ? k+32 : k;
-//         l = !((l+1) % 8) && l > 0 ? 0 : l+1;
-
-//         cnt++;
-//     }
-
-//     cutImage(finalGauss, newMatriz, 1);
-//     memset(newMatriz, 0, sizeof(newMatriz));
-//     memset(output, 0, sizeof(output));
-//     memset(aux, 0, sizeof(aux));
-
-//     cnt = 0;
-//     k = 0;
-//     l = 0;
-
-//     memset(matriz, 0, sizeof(matriz));
-
-//     //do_sobel(finalGauss, finalImage, 256, 256);
-
-//     while (cnt < 64) {
-//         splitSobel(finalGauss, out, l, k);
-
-//         do_sobel(out, auxSobel, 42, 42);
-
-//         appendBuffer(matriz, auxSobel, l, k, 0);
-
-//         k = !((l+1) % 8) && l > 0 ? k+32 : k;
-//         l = !((l+1) % 8) && l > 0 ? 0 : l+1;
-
-//         cnt++;
-//     }
-
-//     cutImage(finalImage, matriz, 0);
-
-//     showImg(finalImage);
-    
-
-// }
