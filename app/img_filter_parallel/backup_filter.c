@@ -5,7 +5,6 @@ int32_t k = 0, l = 0;
 
 uint32_t time;
 uint32_t sequence = 0;
-uint32_t core_sequence[4];
 
 typedef void *(*state_func)();
 core_type currentCore;
@@ -88,11 +87,11 @@ void * master_waitForBuffer(void) {
 
 	if (i >= 0) {
 		printf("\nTX MODE\n");
+
+		currentCore = (core_type)i;
 	
 		memset((uint8_t *)&buffer, 0, sizeof(corePacket));
 		receive((uint8_t *)&buffer, i);
-
-		currentCore = (core_type)buffer.id;
 
 		printf("Received from core%d\n", currentCore);
 
@@ -104,9 +103,7 @@ void * master_waitForBuffer(void) {
 			printf("Received image block buffer...\n");
 			memcpy((uint8_t *)&rwBuffer, (uint8_t *)&buffer, sizeof(corePacket)); //copia para dentro do buffer antes do append
 
-			if(core_sequence[currentCore] == rwBuffer.sequence)
-				sequence++;
-
+			sequence++;
 			printf("Sequence: %d\n", sequence);
 
 			return master_sendAck;
@@ -135,15 +132,14 @@ void * master_waitAck(void) {
 		memset((uint8_t *)&buffer, 0, sizeof(corePacket));
 		receive((uint8_t *)&buffer, i);
 
+		//printf("\nReceived from core%d -- Packet Type: %d\n", i, buffer.packetType);
+
 		if(buffer.packetType == ACK && i == currentCore) {
 			printf("Ack received from core%d\n", i);
 			currentCore = 5;
 			memset((uint8_t *)&buffer, 0, sizeof(corePacket));
 			return master_gaussian;
 		} 
-		// else if(buffer.packetType == IMG_BLOCK && i == currentCore && buffer.sequence == (sequence - 1)) {
-
-		// }
 	}
 
 	return master_waitAck;
@@ -181,8 +177,6 @@ void * master_sendBuffer(void) {
 
 	printf("Sending buffer...\n");
 
-	//rwBuffer.packetType = IMG_BLOCK;
-	
 	for (i = 0; i < 3; i++) {
 		sender((int8_t *)&rwBuffer, currentCore, (int16_t)CORE4, 1000); //envia para onde ele recebeu
 		delay_ms(50);
@@ -196,7 +190,7 @@ void * master_sendBuffer(void) {
 void * master_prepareBuffer(void) {
 	//uint8_t buffer[36*36];
 
-	memset((uint8_t *)&rwBuffer, 0, sizeof(corePacket));
+	memset(rwBuffer.buff, 0, sizeof(rwBuffer.buff));
 
 	switch (currentFilter) {
 	case GAUSSIAN:
@@ -218,9 +212,6 @@ void * master_prepareBuffer(void) {
 	rwBuffer.packetType = IMG_BLOCK;
 	rwBuffer.k = k;
 	rwBuffer.l = l;
-	rwBuffer.sequence = sequence;
-
-	core_sequence[currentCore] = sequence;
 
 	k = !((l+1) % 8) && l > 0 ? k+32 : k;
 	l = !((l+1) % 8) && l > 0 ? 0 : l+1;
@@ -276,7 +267,7 @@ void * slave_filter(void) {
 	uint8_t *filterOutput;
 	int32_t size;
 
-	printf("Filtering: k %d l %d...\n", rwBuffer.k, rwBuffer.l);
+	printf("Filtering...\n");
 	
 	switch (rwBuffer.filter) {
 	case GAUSSIAN:
@@ -303,29 +294,18 @@ void * slave_filter(void) {
 
 void * slave_waitAck(void) {
 	corePacket buffer;
-	uint8_t i = 0;
 
 	printf("Waiting for ack...\n");
 
 	delay_ms(50);
 
-	i = hf_recvprobe();
+	memset((uint8_t *)&buffer, 0, sizeof(corePacket));
+	receive((uint8_t *)&buffer, CORE4);
 
-	if(i >= 0) {
-		memset((uint8_t *)&buffer, 0, sizeof(corePacket));
-		receive((uint8_t *)&buffer, CORE4);
-	}
-
-	if(buffer.packetType == ACK && i >= 0) {
+	if(buffer.packetType == ACK)
 		printf("Ack received!\n");
-		return slave_waitingForPacket;
-	}
 
-	delay_ms(300);
-
-	return slave_sendPacket;
-
-	//return (buffer.packetType == ACK && i >= hf_cpuid()) ? slave_waitingForPacket : slave_sendPacket; //estava funcionando com wait ack
+	return (buffer.packetType == ACK) ? slave_waitingForPacket : slave_waitAck; //estava funcionando com wait ack
 }
 
 void * slave_waitingForPacket(void) {
@@ -341,12 +321,8 @@ void * slave_waitingForPacket(void) {
 	}
 
 	if((rwBuffer.packetType == IMG_BLOCK) && i >= 0) return slave_sendAck;
-	if(!ready) {
-		delay_ms(300);
-		return slave_sendReady;
-	}
-
-	return slave_sendPacket;
+	if(!ready) return slave_sendReady;
+	return slave_waitingForPacket;
 
 	//return (rwBuffer.packetType == IMG_BLOCK) && i >= 0 ? slave_sendAck : slave_sendReady;
 }
@@ -362,7 +338,6 @@ void * slave_sendAck(void) {
 
 	memset(buffer.buff, 0, sizeof(buffer.buff));
 	buffer.packetType = ACK;
-	buffer.id = hf_cpuid();
 
 	for (i = 0; i < 3; i++) {
 		sender((int8_t *)&buffer, CORE4, (int16_t)hf_cpuid(), 5000); 
@@ -382,7 +357,6 @@ void * slave_sendPacket(void) {
 	}
 
 	rwBuffer.packetType = IMG_BLOCK;
-	rwBuffer.id = hf_cpuid();
 
 	for (i = 0; i < 3; i++) {
 		sender((int8_t *)&rwBuffer, CORE4, (int16_t)hf_cpuid(), 5000); 
@@ -393,19 +367,16 @@ void * slave_sendPacket(void) {
 }
 
 void * slave_sendReady(void) {
-	corePacket buffer;
-	//uint8_t i;
-
 	printf("Sending ready packet...\n");
 
-	memset((uint8_t *)&buffer, 0, sizeof(corePacket));
+	//memset(rwBuffer.buff, 0, sizeof(rwBuffer.buff));
 
-	//delay_ms(200);
+	rwBuffer.packetType = READY;
 
-	buffer.packetType = READY;
-	buffer.id = hf_cpuid();
+	sender((int8_t *)&rwBuffer, CORE4, (int16_t)hf_cpuid(), 5000); 	
+	memset((uint8_t *)&rwBuffer, 0, sizeof(corePacket));
 
-	sender((int8_t *)&buffer, CORE4, (int16_t)hf_cpuid(), 5000); 	
+	delay_ms(200);
 
 	return slave_waitingForPacket;
 }

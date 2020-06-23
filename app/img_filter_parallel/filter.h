@@ -50,6 +50,7 @@ typedef enum {
 typedef struct core_packet {
     int32_t k;
     int32_t l;
+    uint32_t sequence;
     core_type id;
     filter_type filter;
     packet_type packetType;

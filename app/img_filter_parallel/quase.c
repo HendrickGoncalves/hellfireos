@@ -168,7 +168,7 @@ void * master_sendAck(void) {
 
 	memset(buffer.buff, 0, sizeof(buffer.buff));
 
-	for (i = 0; i < 3; i++) {
+	for (i = 0; i < 5; i++) {
 		sender((int8_t *)&buffer, currentCore, (int16_t)CORE4, 1000); 
 		delay_ms(50);
 	}
@@ -183,7 +183,7 @@ void * master_sendBuffer(void) {
 
 	//rwBuffer.packetType = IMG_BLOCK;
 	
-	for (i = 0; i < 3; i++) {
+	for (i = 0; i < 5; i++) {
 		sender((int8_t *)&rwBuffer, currentCore, (int16_t)CORE4, 1000); //envia para onde ele recebeu
 		delay_ms(50);
 	}
@@ -276,7 +276,7 @@ void * slave_filter(void) {
 	uint8_t *filterOutput;
 	int32_t size;
 
-	printf("Filtering: k %d l %d...\n", rwBuffer.k, rwBuffer.l);
+	printf("Filtering...\n");
 	
 	switch (rwBuffer.filter) {
 	case GAUSSIAN:
@@ -307,25 +307,19 @@ void * slave_waitAck(void) {
 
 	printf("Waiting for ack...\n");
 
-	delay_ms(50);
+	//delay_ms(50);
 
 	i = hf_recvprobe();
 
 	if(i >= 0) {
 		memset((uint8_t *)&buffer, 0, sizeof(corePacket));
 		receive((uint8_t *)&buffer, CORE4);
+		
+		if(buffer.packetType == ACK && i >= hf_cpuid())
+			printf("Ack received!\n");
 	}
 
-	if(buffer.packetType == ACK && i >= 0) {
-		printf("Ack received!\n");
-		return slave_waitingForPacket;
-	}
-
-	delay_ms(300);
-
-	return slave_sendPacket;
-
-	//return (buffer.packetType == ACK && i >= hf_cpuid()) ? slave_waitingForPacket : slave_sendPacket; //estava funcionando com wait ack
+	return (buffer.packetType == ACK && i >= hf_cpuid()) ? slave_waitingForPacket : slave_waitAck; //estava funcionando com wait ack
 }
 
 void * slave_waitingForPacket(void) {
@@ -341,12 +335,8 @@ void * slave_waitingForPacket(void) {
 	}
 
 	if((rwBuffer.packetType == IMG_BLOCK) && i >= 0) return slave_sendAck;
-	if(!ready) {
-		delay_ms(300);
-		return slave_sendReady;
-	}
-
-	return slave_sendPacket;
+	if(!ready) return slave_sendReady;
+	return slave_waitingForPacket;
 
 	//return (rwBuffer.packetType == IMG_BLOCK) && i >= 0 ? slave_sendAck : slave_sendReady;
 }
@@ -394,16 +384,21 @@ void * slave_sendPacket(void) {
 
 void * slave_sendReady(void) {
 	corePacket buffer;
-	//uint8_t i;
+	uint8_t i;
 
 	printf("Sending ready packet...\n");
 
 	memset((uint8_t *)&buffer, 0, sizeof(corePacket));
 
-	//delay_ms(200);
+	delay_ms(500);
 
 	buffer.packetType = READY;
 	buffer.id = hf_cpuid();
+
+	// for (i = 0; i < 3; i++) {
+	// 	sender((int8_t *)&buffer, CORE4, (int16_t)hf_cpuid(), 5000); 	
+	// 	delay_ms(50);
+	// }
 
 	sender((int8_t *)&buffer, CORE4, (int16_t)hf_cpuid(), 5000); 	
 
