@@ -23,10 +23,17 @@
 #define MAX_SEQUENCE 64 
 
 #define MASTER_PORT 5000
-#define SLAVE_PORT 1000
+#define SLAVE_PORT 6000
 
 #define WIDTH 32
 #define HEIGHT 32
+
+typedef enum {
+    MASTER0 = 0,
+    MASTER1,
+    MASTER2,
+    MASTER3
+} masterPort;
 
 typedef enum {
     CORE0 = 0,

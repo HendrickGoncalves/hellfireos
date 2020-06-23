@@ -1,0 +1,58 @@
+
+KERNEL: booting...
+===========================================================
+HellfireOS v2.19.03 (4.9.3) [Jun 23 2020, 16:20:59]
+Embedded Systems Group - GSE, PUCRS - [2007 - 2019]
+===========================================================
+
+arch:          mips/plasma
+sys clk:       25000 kHz
+time slice:    10480 us
+heap size:     500000 bytes
+max tasks:     30
+
+HAL: _vm_init()
+HAL: _sched_init()
+HAL: _timer_init()
+HAL: _irq_init()
+HAL: _device_init()
+KERNEL: this is core #0
+KERNEL: NoC queue init, 256 packets
+KERNEL: NoC driver registered
+HAL: _task_init()
+KERNEL: [idle task], id: 0, p:0, c:0, d:0, addr: 100019d0, sp: 1001fa48, ss: 1024 bytes
+KERNEL: [slave0], id: 1, p:0, c:0, d:0, addr: 10000fc0, sp: 100359e0, ss: 90000 bytes
+KERNEL: free heap: 372584 bytes
+KERNEL: HellfireOS is up
+Sending ready packet...
+Sending a packet to: Core 4 Port 5000 Channel 0
+Waiting for a packet...
+Sending ready packet...
+Sending a packet to: Core 4 Port 5000 Channel 0
+Waiting for a packet...
+Sending ready packet...
+Sending a packet to: Core 4 Port 5000 Channel 0
+Waiting for a packet...
+Sending ready packet...
+Sending a packet to: Core 4 Port 5000 Channel 0
+Waiting for a packet...
+Packet received!
+Sending ack...
+Sending a packet to: Core 4 Port 5000 Channel 0
+Sending a packet to: Core 4 Port 5000 Channel 0
+Sending a packet to: Core 4 Port 5000 Channel 0
+Filtering: k 0 l 2...
+Doing gaussian...
+Sending packet...
+Sending a packet to: Core 4 Port 5000 Channel 0
+Sending a packet to: Core 4 Port 5000 Channel 0
+Sending a packet to: Core 4 Port 5000 Channel 0
+Waiting for ack...
+Sending a packet to: Core 4 Port 5000 Channel 0
+Sending a packet to: Core 4 Port 5000 Channel 0
+Sending a packet to: Core 4 Port 5000 Channel 0
+Waiting for ack...
+Sending a packet to: Core 4 Port 5000 Channel 0
+Sending a packet to: Core 4 Port 5000 Channel 0
+Sending a packet to: Core 4 Port 5000 Channel 0
+Waiting for ack...
