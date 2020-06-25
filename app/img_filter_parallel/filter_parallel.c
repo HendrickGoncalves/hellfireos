@@ -292,12 +292,16 @@ void * master_gaussian(void) {
 
 	printf("\nGauss finished!\n");
 
+	sendFinishPacket();
+
 	cutImage(gaussianOutput, bufferAux, GAUSSIAN);
 	//showImg(gaussianOutput);
 
 	memset(bufferAux, 0, sizeof(bufferAux));
 
 	sequence = 0;
+	k = 0;
+	l = 0;
 
 	return master_sobel;
 }
@@ -377,11 +381,18 @@ void * slave_waitingForPacket(void) {
 		receive((uint8_t *)&rwBuffer, CORE4);
 	}
 
+	if(rwBuffer.packetType == FINISH_GAUSS && i>= 0) {
+		memset((uint8_t *)&rwBuffer, 0, sizeof(corePacket));
+		return slave_waitingForPacket;
+	}
+
 	if((rwBuffer.packetType == IMG_BLOCK) && i >= 0) return slave_sendAck;
+	
 	if(!ready) {
 		delay_ms(300);
 		return slave_sendReady;
 	}
+
 	if(rwBuffer.packetType == ACK && i >= 0) return slave_waitingForPacket;
 	if(ack) return slave_waitingForPacket;
 
@@ -469,13 +480,15 @@ void sendFinishPacket(void) {
 
 	memset((uint8_t *)&buffer, 0, sizeof(corePacket));
 
-	buffer.packetType = ACK;
+	buffer.packetType = FINISH_GAUSS;
 
-	for (i = 4; i > 0; i--) {
+	printf("\n\nSending finish buffer...\n");
+
+	for (i = 0; i < 4; i++) {
+		sender((int8_t *)&buffer, (core_type)i, (int16_t)CORE4, SLAVE_PORT); 
+		delay_ms(0);
 		sender((int8_t *)&buffer, (core_type)i, (int16_t)CORE4, SLAVE_PORT); 
 		delay_ms(50);
-		// sender((int8_t *)&buffer, (core_type)i, (int16_t)CORE4, SLAVE_PORT); 
-		// delay_ms(50);
 		// sender((int8_t *)&buffer, (core_type)i, (int16_t)CORE4, SLAVE_PORT); 
 	}
 }
