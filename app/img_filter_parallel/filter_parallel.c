@@ -36,7 +36,7 @@ void core4(void) {
 		panic(0xff);
 
 	bufferAux = (uint8_t *)malloc(SOBEL_IMG_OUPUT * sizeof(uint8_t));
-	gaussianOutput = (uint8_t *)malloc(GAUSS_IMG_OUTPUT * sizeof(uint8_t));
+	gaussianOutput = (uint8_t *)malloc(SOBEL_IMG_OUPUT * sizeof(uint8_t));
 
 	time = _readcounter();
 
@@ -162,11 +162,12 @@ void * master_waitAck(void) {
 			printf("Ack received from core%d\n", i);
 			currentCore = 5;
 			memset((uint8_t *)&buffer, 0, sizeof(corePacket));
-			return master_gaussian;
+			
+			return (currentFilter == GAUSSIAN) ? master_gaussian : master_sobel;
 		} 
 	}
 
-	return master_gaussian;
+	return (currentFilter == GAUSSIAN) ? master_gaussian : master_sobel;
 }
 
 void * master_appendBuffer(void) {
@@ -212,7 +213,7 @@ void * master_sendBuffer(void) {
 
 	firstTime = 1;
 
-	return master_gaussian;
+	return (currentFilter == GAUSSIAN) ? master_gaussian : master_sobel;
 }
 
 void * master_prepareBuffer(void) {
@@ -230,7 +231,7 @@ void * master_prepareBuffer(void) {
 		printf("Preparing a sobel buffer...\n");
 
 		rwBuffer.filter = SOBEL;
-		splitSobel(image, rwBuffer.buff, l, k); //split matrix
+		splitSobel(gaussianOutput, rwBuffer.buff, l, k); //split matrix
 
 		break;
 	}
@@ -252,9 +253,7 @@ void * master_prepareBuffer(void) {
 }
 
 void * master_sobel(void) {
-	return master_sobel;
-
-	printf("Gaussian step...\n");
+	printf("Sobel step...\n");
 
 	firstTime = 1;
 
@@ -262,7 +261,20 @@ void * master_sobel(void) {
 
 	if(sequence < MAX_SEQUENCE) return master_waitForBuffer;
 
-	return master_sobel;
+	sendFinishPacket();
+	cleanRXBuffer();
+
+	printf("\nSobel finished!\n");
+
+	memset(gaussianOutput, 0, SOBEL_IMG_OUPUT);
+	cutImage(gaussianOutput, bufferAux, SOBEL);
+
+	time = _readcounter() - time;
+	printf("\nComp time: %d\n", time);
+
+	showImg(gaussianOutput);
+
+	while(1);
 }
 
 void * master_gaussian(void) {
@@ -275,17 +287,13 @@ void * master_gaussian(void) {
 
 	if(sequence < MAX_SEQUENCE) return master_waitForBuffer;
 	
-	sendFinishPacket();
-	cleanRXBuffer();
+	// sendFinishPacket();
+	// cleanRXBuffer();
 
 	printf("\nGauss finished!\n");
 
 	cutImage(gaussianOutput, bufferAux, GAUSSIAN);
-
-	time = _readcounter() - time;
-	printf("\nComp time: %d\n", time);
-
-	showImg(gaussianOutput);
+	//showImg(gaussianOutput);
 
 	memset(bufferAux, 0, sizeof(bufferAux));
 
@@ -314,6 +322,12 @@ void * slave_filter(void) {
 		break;
 	case SOBEL:
 		printf("Doing sobel...\n");
+
+		size = SOBEL_BLOCK_SIZE;
+		filterOutput = (uint8_t *)malloc(SOBEL_BLOCK_SIZE * sizeof(uint8_t));
+
+        do_sobel(rwBuffer.buff, filterOutput, SOBEL_HEIGHT, SOBEL_WIDTH); //filtra com o buffer que ele recebeu
+
 		break;
 	}
 
@@ -460,9 +474,9 @@ void sendFinishPacket(void) {
 	for (i = 4; i > 0; i--) {
 		sender((int8_t *)&buffer, (core_type)i, (int16_t)CORE4, SLAVE_PORT); 
 		delay_ms(50);
-		sender((int8_t *)&buffer, (core_type)i, (int16_t)CORE4, SLAVE_PORT); 
-		delay_ms(50);
-		sender((int8_t *)&buffer, (core_type)i, (int16_t)CORE4, SLAVE_PORT); 
+		// sender((int8_t *)&buffer, (core_type)i, (int16_t)CORE4, SLAVE_PORT); 
+		// delay_ms(50);
+		// sender((int8_t *)&buffer, (core_type)i, (int16_t)CORE4, SLAVE_PORT); 
 	}
 }
 

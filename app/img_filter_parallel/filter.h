@@ -39,7 +39,8 @@ typedef enum {
 typedef enum {
     ACK = 0,
     READY,
-    IMG_BLOCK
+    IMG_BLOCK,
+    FINISH_GAUSS
 } packet_type;
 
 typedef enum {
@@ -70,6 +71,7 @@ void cleanRXBuffer(void);
 void splitGauss(uint8_t *input, uint8_t *output, int32_t l, int32_t k);
 void splitSobel(uint8_t *input, uint8_t *output, int32_t l, int32_t k);
 void do_gaussian(uint8_t *input, uint8_t *output, int32_t width, int32_t height);
+void do_sobel(uint8_t *input, uint8_t *output, int32_t width, int32_t height);
 void appendBuffer(uint8_t *newMatriz, uint8_t *buff, int32_t l, int32_t k, filter_type filter);
 void cutImage(uint8_t *output, uint8_t *newMatriz, filter_type filter);
 void showImg(uint8_t *img);
