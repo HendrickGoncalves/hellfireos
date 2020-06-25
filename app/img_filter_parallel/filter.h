@@ -40,7 +40,8 @@ typedef enum {
     ACK = 0,
     READY,
     IMG_BLOCK,
-    FINISH_GAUSS
+    FINISH_GAUSS,
+    FINISH_SOBEL
 } packet_type;
 
 typedef enum {
@@ -64,7 +65,7 @@ void sender(int8_t *buf, core_type targetCore, int16_t channel, uint16_t targetP
 uint8_t startBuffer(corePacket buffer);
 void receive(uint8_t *buf, int32_t src_channel);
 uint8_t allReady(void);
-void sendFinishPacket(void);
+void sendFinishPacket(packet_type filter);
 uint8_t waitingPaket (void);
 void cleanRXBuffer(void);
 

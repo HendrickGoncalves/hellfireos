@@ -13,6 +13,7 @@ core_type currentCore;
 
 uint8_t *bufferAux;
 uint8_t *gaussianOutput;
+uint8_t *sobelOutput;
 
 uint8_t firstTime = 1;
 uint8_t sent = 0;
@@ -117,8 +118,7 @@ void * master_waitForBuffer(void) {
 			printf("Received image block buffer...\n");
 			memcpy((uint8_t *)&rwBuffer, (uint8_t *)&buffer, sizeof(corePacket)); //copia para dentro do buffer antes do append
 
-			//if(core_sequence[currentCore] == rwBuffer.sequence)
-				sequence++;
+			sequence++;
 
 			printf("Sequence: %d\n", sequence);
 
@@ -171,6 +171,12 @@ void * master_waitAck(void) {
 }
 
 void * master_appendBuffer(void) {
+	if(rwBuffer.k == 256 && rwBuffer.l >= 0) {
+		printf("Dropping packet...\n");
+		sequence--;
+		return (currentFilter == GAUSSIAN) ? master_gaussian : master_sobel;
+	}
+
 	printf("Appending buffer: k %d l %d\n", rwBuffer.k, rwBuffer.l);
 
 	appendBuffer(bufferAux, rwBuffer.buff, rwBuffer.l, rwBuffer.k, currentFilter);
@@ -261,18 +267,22 @@ void * master_sobel(void) {
 
 	if(sequence < MAX_SEQUENCE) return master_waitForBuffer;
 
-	sendFinishPacket();
-	cleanRXBuffer();
+	sendFinishPacket(FINISH_SOBEL);
+	//cleanRXBuffer();
 
 	printf("\nSobel finished!\n");
 
-	memset(gaussianOutput, 0, SOBEL_IMG_OUPUT);
-	cutImage(gaussianOutput, bufferAux, SOBEL);
+	free(gaussianOutput);
+	gaussianOutput = NULL;
+	
+	sobelOutput = (uint8_t *)malloc(IMG_SIZE * sizeof(uint8_t));
+
+	cutImage(sobelOutput, bufferAux, SOBEL);
 
 	time = _readcounter() - time;
 	printf("\nComp time: %d\n", time);
 
-	showImg(gaussianOutput);
+	showImg(sobelOutput);
 
 	while(1);
 }
@@ -286,13 +296,11 @@ void * master_gaussian(void) {
 	currentFilter = GAUSSIAN;
 
 	if(sequence < MAX_SEQUENCE) return master_waitForBuffer;
-	
-	// sendFinishPacket();
-	// cleanRXBuffer();
 
 	printf("\nGauss finished!\n");
 
-	sendFinishPacket();
+	sendFinishPacket(FINISH_GAUSS);
+	cleanRXBuffer();
 
 	cutImage(gaussianOutput, bufferAux, GAUSSIAN);
 	//showImg(gaussianOutput);
@@ -302,6 +310,10 @@ void * master_gaussian(void) {
 	sequence = 0;
 	k = 0;
 	l = 0;
+	coreReadyFlag[0] = 0;
+	coreReadyFlag[1] = 0;
+	coreReadyFlag[2] = 0;
+	coreReadyFlag[3] = 0;
 
 	return master_sobel;
 }
@@ -382,8 +394,13 @@ void * slave_waitingForPacket(void) {
 	}
 
 	if(rwBuffer.packetType == FINISH_GAUSS && i>= 0) {
+		printf("\n\nFinishing gauss...\n");
 		memset((uint8_t *)&rwBuffer, 0, sizeof(corePacket));
-		return slave_waitingForPacket;
+		ready = 0;
+		return slave_sendReady;
+	} else if(rwBuffer.packetType == FINISH_SOBEL && i>= 0) {
+		printf("Finishing sobel...\n");
+		while(1);
 	}
 
 	if((rwBuffer.packetType == IMG_BLOCK) && i >= 0) return slave_sendAck;
@@ -419,7 +436,7 @@ void * slave_sendAck(void) {
 		
 	//}
 
-	return slave_filter;
+	return (rwBuffer.k == 256 && rwBuffer.l == 0) ? slave_sendReady : slave_filter; //significa que acabou o processamente de um filtro
 }
 
 void * slave_sendPacket(void) {
@@ -472,7 +489,7 @@ void cleanRXBuffer(void) {
 	}
 }
 
-void sendFinishPacket(void) {
+void sendFinishPacket(packet_type filter) {
 	corePacket buffer;
 	uint8_t i;
 
@@ -480,16 +497,16 @@ void sendFinishPacket(void) {
 
 	memset((uint8_t *)&buffer, 0, sizeof(corePacket));
 
-	buffer.packetType = FINISH_GAUSS;
+	buffer.packetType = filter;
 
 	printf("\n\nSending finish buffer...\n");
 
 	for (i = 0; i < 4; i++) {
 		sender((int8_t *)&buffer, (core_type)i, (int16_t)CORE4, SLAVE_PORT); 
-		delay_ms(0);
+		delay_ms(100);
 		sender((int8_t *)&buffer, (core_type)i, (int16_t)CORE4, SLAVE_PORT); 
 		delay_ms(50);
-		// sender((int8_t *)&buffer, (core_type)i, (int16_t)CORE4, SLAVE_PORT); 
+		sender((int8_t *)&buffer, (core_type)i, (int16_t)CORE4, SLAVE_PORT); 
 	}
 }
 
