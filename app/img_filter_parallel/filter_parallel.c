@@ -36,8 +36,8 @@ void core4(void) {
 	if (hf_comm_create(hf_selfid(), MASTER_PORT, 0)) 
 		panic(0xff);
 
-	bufferAux = (uint8_t *)malloc(SOBEL_IMG_OUPUT * sizeof(uint8_t));
-	gaussianOutput = (uint8_t *)malloc(SOBEL_IMG_OUPUT * sizeof(uint8_t));
+	bufferAux = (uint8_t *)malloc(GAUSS_IMG_OUTPUT * sizeof(uint8_t));
+	gaussianOutput = (uint8_t *)malloc(IMG_SIZE * sizeof(uint8_t));
 
 	time = _readcounter();
 
@@ -274,7 +274,7 @@ void * master_sobel(void) {
 
 	free(gaussianOutput);
 	gaussianOutput = NULL;
-	
+
 	sobelOutput = (uint8_t *)malloc(IMG_SIZE * sizeof(uint8_t));
 
 	cutImage(sobelOutput, bufferAux, SOBEL);
@@ -305,6 +305,10 @@ void * master_gaussian(void) {
 	cutImage(gaussianOutput, bufferAux, GAUSSIAN);
 	//showImg(gaussianOutput);
 
+	free(bufferAux);
+	bufferAux = NULL;
+
+	bufferAux = (uint8_t *)malloc(SOBEL_IMG_OUPUT * sizeof(uint8_t));
 	memset(bufferAux, 0, sizeof(bufferAux));
 
 	sequence = 0;
