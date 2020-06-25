@@ -170,7 +170,7 @@ void * master_waitAck(void) {
 }
 
 void * master_appendBuffer(void) {
-	printf("Appending buffer: k %d l %d\n", rwBuffer.l, rwBuffer.k);
+	printf("Appending buffer: k %d l %d\n", rwBuffer.k, rwBuffer.l);
 
 	appendBuffer(bufferAux, rwBuffer.buff, rwBuffer.l, rwBuffer.k, currentFilter);
 
@@ -186,9 +186,9 @@ void * master_sendAck(void) {
 
 	ack_flags[currentCore] = 0;
 
-	buffer.packetType = ACK;
+	memset((uint8_t *)&buffer, 0, sizeof(corePacket));
 
-	memset(buffer.buff, 0, sizeof(buffer.buff));
+	buffer.packetType = ACK;
 
 	//for (i = 0; i < 3; i++) {
 		sender((int8_t *)&buffer, currentCore, (int16_t)CORE4, SLAVE_PORT); 
@@ -216,8 +216,6 @@ void * master_sendBuffer(void) {
 }
 
 void * master_prepareBuffer(void) {
-	//uint8_t buffer[36*36];
-
 	memset((uint8_t *)&rwBuffer, 0, sizeof(corePacket));
 
 	switch (currentFilter) {
@@ -249,7 +247,6 @@ void * master_prepareBuffer(void) {
 
 	k = !((l+1) % 8) && l > 0 ? k+32 : k;
 	l = !((l+1) % 8) && l > 0 ? 0 : l+1;
-
 
 	return master_sendBuffer;
 }
@@ -386,13 +383,13 @@ void * slave_sendAck(void) {
 
 	ready =  1;
 
-	memset(buffer.buff, 0, sizeof(buffer.buff));
+	memset((uint8_t *)&buffer, 0, sizeof(corePacket));
 	buffer.packetType = ACK;
 	buffer.id = hf_cpuid();
 
 	delay_ms(500);
 	//for (i = 0; i < 3; i++) {
-		sender((int8_t *)&buffer, CORE4, (int16_t)hf_cpuid(), 5000); 
+		sender((int8_t *)&buffer, CORE4, (int16_t)hf_cpuid(), MASTER_PORT); 
 		memset(&buffer, 0, sizeof(corePacket));	
 		
 	//}
@@ -414,8 +411,8 @@ void * slave_sendPacket(void) {
 	rwBuffer.id = hf_cpuid();
 
 	//for (i = 0; i < 5; i++) {
-		delay_ms(100);
-		sender((int8_t *)&rwBuffer, CORE4, (int16_t)hf_cpuid(), 5000); 
+		//delay_ms(10);
+		sender((int8_t *)&rwBuffer, CORE4, (int16_t)hf_cpuid(), MASTER_PORT); 
 	//}
 
 	return slave_waitAck;
@@ -456,9 +453,9 @@ void sendFinishPacket(void) {
 
 	ack_flags[currentCore] = 0;
 
-	buffer.packetType = ACK;
+	memset((uint8_t *)&buffer, 0, sizeof(corePacket));
 
-	memset(buffer.buff, 0, sizeof(buffer.buff));
+	buffer.packetType = ACK;
 
 	for (i = 4; i > 0; i--) {
 		sender((int8_t *)&buffer, (core_type)i, (int16_t)CORE4, SLAVE_PORT); 
