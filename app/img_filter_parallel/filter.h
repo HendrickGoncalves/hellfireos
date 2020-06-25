@@ -23,17 +23,10 @@
 #define MAX_SEQUENCE 64 
 
 #define MASTER_PORT 5000
-#define SLAVE_PORT 6000
+#define SLAVE_PORT 1000
 
 #define WIDTH 32
 #define HEIGHT 32
-
-typedef enum {
-    MASTER0 = 0,
-    MASTER1,
-    MASTER2,
-    MASTER3
-} masterPort;
 
 typedef enum {
     CORE0 = 0,
@@ -70,7 +63,9 @@ void sender(int8_t *buf, core_type targetCore, int16_t channel, uint16_t targetP
 uint8_t startBuffer(corePacket buffer);
 void receive(uint8_t *buf, int32_t src_channel);
 uint8_t allReady(void);
-void initCores(void);
+void sendFinishPacket(void);
+uint8_t waitingPaket (void);
+void cleanRXBuffer(void);
 
 void splitGauss(uint8_t *input, uint8_t *output, int32_t l, int32_t k);
 void splitSobel(uint8_t *input, uint8_t *output, int32_t l, int32_t k);

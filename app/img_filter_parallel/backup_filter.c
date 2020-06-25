@@ -77,6 +77,8 @@ void * master_waitForBuffer(void) {
 
 	currentCore = 5;
 
+	delay_ms(100);
+
 	if(firstTime) {
 		sent = 0;
 		firstTime = 0;
@@ -93,7 +95,7 @@ void * master_waitForBuffer(void) {
 		memset((uint8_t *)&buffer, 0, sizeof(corePacket));
 		receive((uint8_t *)&buffer, i);
 
-		printf("Received from core%d\n", currentCore);
+		printf("Received from core%d: k %d l %d\n", currentCore, buffer.k, buffer.l);
 
 		switch (buffer.packetType) {
 		case READY:

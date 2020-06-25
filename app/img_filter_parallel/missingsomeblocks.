@@ -21,8 +21,6 @@ uint8_t initBuffer = 1;
 uint8_t ready = 0;
 uint8_t ack_flags[4];
 uint8_t notFinished = 0;
-uint8_t coreReadyFlag[] = {0, 0, 0, 0};
-uint8_t ack = 0;
 
 corePacket rwBuffer;
 
@@ -101,23 +99,22 @@ void * master_waitForBuffer(void) {
 
 		currentCore = (core_type)buffer.id;
 
-		printf("Received from core%d: k %d l %d\n", currentCore, buffer.k, buffer.l);
+		printf("Received from core%d\n", currentCore);
+
+		// if(notFinished) {
+		// 	if(buffer.packetType != IMG_BLOCK) return master_waitForBuffer;
+		// 	else if(buffer.packetType == IMG_BLOCK && !ack_flags[currentCore]) return master_waitForBuffer;
+		// }
 
 		switch (buffer.packetType) {
 		case READY:
 			printf("Received ready buffer...\n");
-
-			if(coreReadyFlag[currentCore])
-				break;
-
-			coreReadyFlag[currentCore] = 1;
-
 			return master_prepareBuffer;
 		case IMG_BLOCK:
 			printf("Received image block buffer...\n");
 			memcpy((uint8_t *)&rwBuffer, (uint8_t *)&buffer, sizeof(corePacket)); //copia para dentro do buffer antes do append
 
-			//if(core_sequence[currentCore] == rwBuffer.sequence)
+			if(core_sequence[currentCore] == rwBuffer.sequence)
 				sequence++;
 
 			printf("Sequence: %d\n", sequence);
@@ -166,7 +163,7 @@ void * master_waitAck(void) {
 		} 
 	}
 
-	return master_gaussian;
+	return master_waitForBuffer;
 }
 
 void * master_appendBuffer(void) {
@@ -192,7 +189,7 @@ void * master_sendAck(void) {
 
 	//for (i = 0; i < 3; i++) {
 		sender((int8_t *)&buffer, currentCore, (int16_t)CORE4, SLAVE_PORT); 
-		//delay_ms(50);
+		delay_ms(50);
 	//}
 
 	return master_appendBuffer;
@@ -207,12 +204,12 @@ void * master_sendBuffer(void) {
 	
 	//for (i = 0; i < 3; i++) {
 		sender((int8_t *)&rwBuffer, currentCore, (int16_t)CORE4, SLAVE_PORT); //envia para onde ele recebeu
-		//delay_ms(50);
+		delay_ms(50);
 	//}
 
 	firstTime = 1;
 
-	return master_gaussian;
+	return master_waitForBuffer;
 }
 
 void * master_prepareBuffer(void) {
@@ -245,11 +242,10 @@ void * master_prepareBuffer(void) {
 	core_sequence[currentCore] = sequence;
 	ack_flags[currentCore] = 1;
 
-	printf("\nK %d l %d enviado.\n", k, l);
-
 	k = !((l+1) % 8) && l > 0 ? k+32 : k;
 	l = !((l+1) % 8) && l > 0 ? 0 : l+1;
 
+	printf("\nK %d l %d\n", k, l);
 
 	return master_sendBuffer;
 }
@@ -345,11 +341,10 @@ void * slave_waitAck(void) {
 
 	if(buffer.packetType == ACK && i >= 0) {
 		printf("Ack received!\n");
-		ack = 1;
 		return slave_waitingForPacket;
 	}
 
-	delay_ms(100);
+	delay_ms(300);
 
 	return slave_sendPacket;
 }
@@ -371,8 +366,7 @@ void * slave_waitingForPacket(void) {
 		delay_ms(300);
 		return slave_sendReady;
 	}
-	if(rwBuffer.packetType == ACK && i >= 0) return slave_waitingForPacket;
-	if(ack) return slave_waitingForPacket;
+	if(rwBuffer.packetType == ACK) return slave_waitingForPacket;
 
 	return slave_sendPacket;
 }
@@ -408,13 +402,11 @@ void * slave_sendPacket(void) {
 		printf("Sending packet...\n");
 	}
 
-	ack = 0;
-
 	rwBuffer.packetType = IMG_BLOCK;
 	rwBuffer.id = hf_cpuid();
 
 	//for (i = 0; i < 5; i++) {
-		delay_ms(100);
+		delay_ms(500);
 		sender((int8_t *)&rwBuffer, CORE4, (int16_t)hf_cpuid(), 5000); 
 	//}
 

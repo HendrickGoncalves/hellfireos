@@ -5,21 +5,21 @@ Sections:
 Idx Name          Size      VMA       LMA       File off  Algn
   0 .text.start   000002b4  10000000  10000000  00001000  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
-  1 .text         000046c8  100002b4  100002b4  000012b4  2**2
+  1 .text         0000476c  100002b4  100002b4  000012b4  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
-  2 .rodata       00000c00  1000497c  1000497c  0000597c  2**2
+  2 .rodata       00000c18  10004a20  10004a20  00005a20  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
-  3 .MIPS.abiflags 00000018  10005580  10005580  00006580  2**3
+  3 .MIPS.abiflags 00000018  10005638  10005638  00006638  2**3
                   CONTENTS, ALLOC, LOAD, READONLY, DATA, LINK_ONCE_SAME_SIZE
-  4 .data         00010008  10005598  10005598  00006598  2**2
+  4 .data         00010010  10005650  10005650  00006650  2**2
                   CONTENTS, ALLOC, LOAD, DATA
-  5 .bss          0007bb94  100155a0  100155a0  000165a0  2**3
+  5 .bss          0007bb9c  10015660  10015660  00016660  2**3
                   ALLOC
-  6 .scommon      00000048  10091134  10091134  000165a0  2**2
+  6 .scommon      0000004c  100911fc  100911fc  00016660  2**2
                   ALLOC
-  7 .reginfo      00000018  00000000  00000000  000165a0  2**2
+  7 .reginfo      00000018  00000000  00000000  00016660  2**2
                   CONTENTS, READONLY, LINK_ONCE_SAME_SIZE
-  8 .gnu.attributes 00000010  00000000  00000000  000165b8  2**0
+  8 .gnu.attributes 00000010  00000000  00000000  00016678  2**0
                   CONTENTS, READONLY
-  9 .comment      00000011  00000000  00000000  000165c8  2**0
+  9 .comment      00000011  00000000  00000000  00016688  2**0
                   CONTENTS, READONLY
