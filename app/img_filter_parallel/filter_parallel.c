@@ -223,6 +223,7 @@ void * master_sendBuffer(void) {
 }
 
 void * master_prepareBuffer(void) {
+	uint16_t i, j = 0;
 	memset((uint8_t *)&rwBuffer, 0, sizeof(corePacket));
 
 	switch (currentFilter) {
@@ -235,6 +236,10 @@ void * master_prepareBuffer(void) {
 		break;
 	case SOBEL:
 		printf("Preparing a sobel buffer...\n");
+		// for(i=0;i<42;i++) {
+		// 	printf("%X\n", rwBuffer.buff[i*42*j]);
+		// 	j++;
+		// }
 
 		rwBuffer.filter = SOBEL;
 		splitSobel(gaussianOutput, rwBuffer.buff, l, k); //split matrix
@@ -288,6 +293,7 @@ void * master_sobel(void) {
 }
 
 void * master_gaussian(void) {
+	int16_t i, j;
 
 	printf("Gaussian step...\n");
 
@@ -309,7 +315,7 @@ void * master_gaussian(void) {
 	bufferAux = NULL;
 
 	bufferAux = (uint8_t *)malloc(SOBEL_IMG_OUPUT * sizeof(uint8_t));
-	memset(bufferAux, 0, sizeof(bufferAux));
+	memset(bufferAux, 0, SOBEL_IMG_OUPUT);
 
 	sequence = 0;
 	k = 0;
@@ -345,6 +351,8 @@ void * slave_filter(void) {
 
 		size = SOBEL_BLOCK_SIZE;
 		filterOutput = (uint8_t *)malloc(SOBEL_BLOCK_SIZE * sizeof(uint8_t));
+
+		memset(filterOutput, 0, SOBEL_BLOCK_SIZE);
 
         do_sobel(rwBuffer.buff, filterOutput, SOBEL_HEIGHT, SOBEL_WIDTH); //filtra com o buffer que ele recebeu
 
@@ -466,7 +474,6 @@ void * slave_sendPacket(void) {
 
 void * slave_sendReady(void) {
 	corePacket buffer;
-	//uint8_t i;
 
 	printf("Sending ready packet...\n");
 

@@ -112,7 +112,7 @@ void splitSobel(uint8_t *input, uint8_t *output, int32_t l, int32_t k ) {
     int32_t i, j;
 	int32_t colunm;
 
-    //memset(buffAux, 0, sizeof(buffAux));
+    memset(buffAux, 0, sizeof(buffAux));
 
     colunm = (l * HEIGHT) > 0 ? (l * HEIGHT) : 0;
     
