@@ -134,18 +134,12 @@ void splitGauss(uint8_t *input, uint8_t *output, int32_t l, int32_t k) {
     int32_t i = 0, j = 0;
 	int32_t colunm = 0;
 
-    //memset(buffAux, 0, sizeof(buffAux));
-
     colunm = (l * HEIGHT) > 0 ? (l * HEIGHT) : 0;
 
-    //printf("Spliting gaussian buffer: K %d l %d\n", k, l);
-    
     for (i = 0; i < 256; i++) {
         for (j = 0; j < 256; j++) {
             buffAux[(((i+2) * 260) + j) + 2] =  input[((i * 256) + j)];
-           //printf(" %d", ((i+2) * 260) + j + 2);
         }    
-        //printf("\n");
     }
 
     for(i = 0; i < 36; i++) {

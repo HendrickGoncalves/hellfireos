@@ -54,31 +54,24 @@ void * master_waitForBuffer(void) {
 	int32_t i = -208;
 	corePacket buffer;
 
-	delay_ms(50);
-
 	currentCore = 5;
 
 	if(firstTime) {
 		sent = 0;
 		firstTime = 0;
-		printf("Waiting for a buffer...\n");
 	}
 
 	i = hf_recvprobe();
 
 	if (i >= 0) {
-		printf("TX MODE\n");
 	
 		memset((uint8_t *)&buffer, 0, sizeof(corePacket));
 		receive((uint8_t *)&buffer, i);
 
 		currentCore = (core_type)buffer.id;
 
-		printf("Received from core%d: k %d l %d\n", currentCore, buffer.k, buffer.l);
-
 		switch (buffer.packetType) {
 		case READY:
-			printf("Received ready buffer...\n");
 
 			if(coreReadyFlag[currentCore])
 				break;
@@ -87,7 +80,6 @@ void * master_waitForBuffer(void) {
 
 			return master_prepareBuffer;
 		case IMG_BLOCK:
-			printf("Received image block buffer...\n");
 			memcpy((uint8_t *)&rwBuffer, (uint8_t *)&buffer, sizeof(corePacket)); 
 
 			sequence++;
@@ -99,13 +91,11 @@ void * master_waitForBuffer(void) {
 		case ACK: 
 
 			if(buffer.packetType == ACK && i == currentCore) {
-				printf("Ack received from core%d\n", i);
 				currentCore = 5;
 				memset((uint8_t *)&buffer, 0, sizeof(corePacket));
 				break;
 			} 
 		default:
-			printf("Received ERROR: %d\n", buffer.packetType);
 			break;
 		}
 	
@@ -116,12 +106,9 @@ void * master_waitForBuffer(void) {
 
 void * master_appendBuffer(void) {
 	if(rwBuffer.k == 256 && rwBuffer.l >= 0) {
-		printf("Dropping packet...\n");
 		sequence--;
 		return (currentFilter == GAUSSIAN) ? master_gaussian : master_sobel;
 	}
-
-	printf("Appending buffer: k %d l %d\n", rwBuffer.k, rwBuffer.l);
 
 	appendBuffer(bufferAux, rwBuffer.buff, rwBuffer.l, rwBuffer.k, currentFilter);
 
@@ -131,7 +118,6 @@ void * master_appendBuffer(void) {
 }
 
 void * master_sendAck(void) {
-	printf("Sending ack...\n");
 	corePacket buffer;
 
 	ack_flags[currentCore] = 0;
@@ -147,8 +133,6 @@ void * master_sendAck(void) {
 
 void * master_sendBuffer(void) {
 
-	printf("Sending buffer...\n");
-
 	sender((int8_t *)&rwBuffer, currentCore, (int16_t)CORE4, SLAVE_PORT); //envia para onde ele recebeu
 
 	firstTime = 1;
@@ -161,14 +145,11 @@ void * master_prepareBuffer(void) {
 
 	switch (currentFilter) {
 	case GAUSSIAN:
-		printf("Preparing a gaussian buffer...\n");
-
 		rwBuffer.filter = GAUSSIAN;
 		splitGauss(image, rwBuffer.buff, l, k); //split matrix
 
 		break;
 	case SOBEL:
-		printf("Preparing a sobel buffer...\n");
 
 		rwBuffer.filter = SOBEL;
 		splitSobel(gaussianOutput, rwBuffer.buff, l, k); //split matrix
@@ -183,8 +164,6 @@ void * master_prepareBuffer(void) {
 
 	ack_flags[currentCore] = 1;
 
-	printf("\nK %d l %d enviado.\n", k, l);
-
 	k = !((l+1) % 8) && l > 0 ? k+32 : k;
 	l = !((l+1) % 8) && l > 0 ? 0 : l+1;
 
@@ -192,7 +171,6 @@ void * master_prepareBuffer(void) {
 }
 
 void * master_sobel(void) {
-	printf("Sobel step...\n");
 
 	firstTime = 1;
 
@@ -202,8 +180,6 @@ void * master_sobel(void) {
 
 	sendFinishPacket(FINISH_SOBEL);
 
-	printf("\nSobel finished!\n");
-
 	free(gaussianOutput);
 	gaussianOutput = NULL;
 
@@ -212,7 +188,7 @@ void * master_sobel(void) {
 	cutImage(sobelOutput, bufferAux, SOBEL);
 
 	time = _readcounter() - time;
-	printf("\nComp time: %d\n", time);
+	printf("done in %d clock cycles.\n\n", time);
 
 	showImg(sobelOutput);
 
@@ -220,15 +196,12 @@ void * master_sobel(void) {
 }
 
 void * master_gaussian(void) {
-	printf("Gaussian step...\n");
 
 	firstTime = 1;
 
 	currentFilter = GAUSSIAN;
 
 	if(sequence < MAX_SEQUENCE) return master_waitForBuffer;
-
-	printf("\nGauss finished!\n");
 
 	sendFinishPacket(FINISH_GAUSS);
 	cleanRXBuffer();
@@ -257,12 +230,9 @@ void * master_gaussian(void) {
 void * slave_filter(void) {
 	uint8_t *filterOutput;
 	int32_t size = 0;
-
-	printf("Filtering: k %d l %d...\n", rwBuffer.k, rwBuffer.l);
 	
 	switch (rwBuffer.filter) {
 	case GAUSSIAN:
-		printf("Doing gaussian...\n");
 
 		size = GAUSS_BLOCK_SIZE;
 		filterOutput = (uint8_t *)malloc(GAUSS_BLOCK_SIZE * sizeof(uint8_t));
@@ -271,7 +241,6 @@ void * slave_filter(void) {
 
 		break;
 	case SOBEL:
-		printf("Doing sobel...\n");
 
 		size = SOBEL_BLOCK_SIZE;
 		filterOutput = (uint8_t *)malloc(SOBEL_BLOCK_SIZE * sizeof(uint8_t));
@@ -295,10 +264,6 @@ void * slave_waitAck(void) {
 	corePacket buffer;
 	uint8_t i = 0;
 
-	printf("Waiting for ack...\n");
-
-	delay_ms(50);
-
 	i = hf_recvprobe();
 
 	if(i >= 0) {
@@ -307,20 +272,17 @@ void * slave_waitAck(void) {
 	}
 
 	if(buffer.packetType == ACK && i >= 0) {
-		printf("Ack received!\n");
 		ack = 1;
 		return slave_waitingForPacket;
 	}
 
-	delay_ms(100);
+	//delay_ms(50);
 
 	return slave_sendPacket;
 }
 
 void * slave_waitingForPacket(void) {
 	int32_t i = -208;
-
-	printf("Waiting for a packet...\n");
 
 	i = hf_recvprobe();
 
@@ -330,19 +292,17 @@ void * slave_waitingForPacket(void) {
 	}
 
 	if(rwBuffer.packetType == FINISH_GAUSS && i>= 0) {
-		printf("\n\nFinishing gauss...\n");
 		memset((uint8_t *)&rwBuffer, 0, sizeof(corePacket));
 		ready = 0;
 		return slave_sendReady;
 	} else if(rwBuffer.packetType == FINISH_SOBEL && i>= 0) {
-		printf("Finishing sobel...\n");
 		while(1);
 	}
 
 	if((rwBuffer.packetType == IMG_BLOCK) && i >= 0) return slave_sendAck;
 	
 	if(!ready) {
-		delay_ms(300);
+		delay_ms(50);
 		return slave_sendReady;
 	}
 
@@ -353,8 +313,6 @@ void * slave_waitingForPacket(void) {
 }
 
 void * slave_sendAck(void) {
-	printf("Packet received!\n");
-	printf("Sending ack...\n");
 
 	corePacket buffer;
 
@@ -364,7 +322,7 @@ void * slave_sendAck(void) {
 	buffer.packetType = ACK;
 	buffer.id = hf_cpuid();
 
-	delay_ms(500);
+	delay_ms(50);
 
 	sender((int8_t *)&buffer, CORE4, (int16_t)hf_cpuid(), MASTER_PORT); 
 	memset(&buffer, 0, sizeof(corePacket));	
@@ -373,11 +331,6 @@ void * slave_sendAck(void) {
 }
 
 void * slave_sendPacket(void) {
-
-	if(firstTime) {
-		firstTime = 0;
-		printf("Sending packet...\n");
-	}
 
 	ack = 0;
 
@@ -391,8 +344,6 @@ void * slave_sendPacket(void) {
 
 void * slave_sendReady(void) {
 	corePacket buffer;
-
-	printf("Sending ready packet...\n");
 
 	memset((uint8_t *)&buffer, 0, sizeof(corePacket));
 
@@ -425,8 +376,6 @@ void sendFinishPacket(packet_type filter) {
 
 	buffer.packetType = filter;
 
-	printf("\n\nSending finish buffer...\n");
-
 	for (i = 0; i < 4; i++) 
 		sender((int8_t *)&buffer, (core_type)i, (int16_t)CORE4, SLAVE_PORT); 
 	
@@ -448,8 +397,6 @@ void master_fsm(void) {
 
 void sender(int8_t *buf, core_type targetCore, int16_t channel, uint16_t targetPort) {
 	int16_t val; 
-	
-	printf("Sending a packet to: Core %d Port %d Channel %d\n", targetCore, targetPort, channel);
 
 	val = hf_send((uint16_t)targetCore, targetPort, buf, sizeof(corePacket), channel);
 

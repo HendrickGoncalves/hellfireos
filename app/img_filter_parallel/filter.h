@@ -33,7 +33,7 @@ typedef enum {
     CORE1,
     CORE2,
     CORE3,
-    CORE4
+    CORE4,
 } core_type;
 
 typedef enum {
@@ -79,11 +79,8 @@ void showImg(uint8_t *img);
 
 /* ------------------------ THREADS -------------------*/
 
-void core0(void);
-void core1(void);
-void core2(void);
-void core3(void);
-void core4(void);
+void master(void);
+void slave(void);
 
 /* -----------------  MASTER STATE MACHINE ---------  */
 
@@ -95,7 +92,6 @@ void * master_sobel(void);
 void * master_prepareBuffer(void);
 void * master_appendImage(void);
 void * master_sendAck(void);
-void * master_waitAck(void);
 void * master_sendBuffer(void);
 void * master_waitForBuffer(void);
 void * master_appendBuffer(void);
